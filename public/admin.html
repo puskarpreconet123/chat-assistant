@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Assistant - Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #008069;
+      --primary-hover: #016b57;
+      --primary-light: #d9fdd3;
+      --bg-app: #f0f2f5;
+      --bg-card: #ffffff;
+      --border-color: #e9edef;
+      --text-primary: #111b21;
+      --text-secondary: #667781;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --danger-light: #fee2e2;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --font-family: 'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
+
+    body {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--primary);
+      color: #ffffff;
+      padding: 0 2rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .logo-icon {
+      font-size: 1.6rem;
+    }
+
+    /* Tab-based Navigation in Header */
+    .tabs-nav {
+      display: flex;
+      height: 100%;
+      align-items: center;
+      margin-left: 3rem;
+      position: relative;
+      flex: 1;
+    }
+
+    .tab-btn {
+      color: rgba(255, 255, 255, 0.7);
+      background: none;
+      border: none;
+      padding: 0 1.25rem;
+      height: 100%;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: color 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      outline: none;
+    }
+
+    .tab-btn:hover, .tab-btn.active {
+      color: #ffffff;
+    }
+
+    .tabs-slider {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: #ffffff;
+      border-radius: 2px 2px 0 0;
+      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .btn-header {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: white;
+      text-decoration: none;
+      padding: 0.45rem 1.1rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .btn-header:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .main-container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      flex: 1;
+    }
+
+    .panel-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      margin-bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-title-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Tables styling */
+    .data-table-container {
+      overflow-x: auto;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .data-table th, .data-table td {
+      padding: 0.85rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .data-table th {
+      background: #f8fafc;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .data-table tr:hover {
+      background: #f8fafc;
+    }
+
+    /* Forms */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid #ccd0d5;
+      background: #ffffff;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(0, 128, 105, 0.15);
+    }
+
+    .btn {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 0.65rem 1.25rem;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:hover { background: var(--primary-hover); }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-danger {
+      background: var(--danger);
+    }
+    .btn-danger:hover { background: var(--danger-hover); }
+
+    .btn-secondary {
+      background: #f0f2f5;
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    .btn-secondary:hover { background: #e4e6eb; }
+
+    .btn-action {
+      background: #f0f2f5;
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      font-size: 0.75rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-action:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .btn-action-danger {
+      background: #fff5f5;
+      color: var(--danger);
+      border: 1px solid #fed7d7;
+    }
+    .btn-action-danger:hover {
+      background: var(--danger-light);
+      border-color: var(--danger);
+    }
+
+    .action-group {
+      display: flex;
+      gap: 0.35rem;
+      justify-content: flex-end;
+    }
+
+    .bulk-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      background: #f8fafc;
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 1.25rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .status-badge.active {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    /* Specific view structures */
+    #viewRegister {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media(max-width: 768px) {
+      #viewRegister { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <span class="logo-icon">⚙️</span>
+      <span>Admin Dashboard</span>
+    </div>
+
+    <!-- Tab based navigation inside header -->
+    <div class="tabs-nav">
+      <button id="tabBtnUsers" class="tab-btn active" onclick="switchAdminTab('users')">👤 Manage Users</button>
+      <button id="tabBtnAgents" class="tab-btn" onclick="switchAdminTab('agents')">👥 Manage Agents</button>
+      <button id="tabBtnRegister" class="tab-btn" onclick="switchAdminTab('register')">➕ Register New</button>
+      <div class="tabs-slider"></div>
+    </div>
+
+    <div class="header-links">
+      <a href="/chat.html" class="btn-header" style="margin-right: 0.5rem;">💬 Chat Portal</a>
+      <a href="/" class="btn-header" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15);">🏠 Casino Lobby</a>
+    </div>
+  </header>
+
+  <div class="main-container">
+    
+    <!-- Tab View 1: Manage Users -->
+    <div id="viewUsers" class="panel-card">
+      <div class="panel-title-container">
+        <div class="panel-title">👤 User Directory & Assignments</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary);" id="userCountText">Loading users...</div>
+      </div>
+
+      <!-- Bulk action header bar -->
+      <div class="bulk-bar">
+        <span style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.02em;">Bulk Actions (Selected Users):</span>
+        
+        <div style="display:flex; align-items:center; gap:0.5rem; flex:1; min-width:250px;">
+          <select id="bulkAgentSelect" style="padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+            <option value="">Select Agent...</option>
+          </select>
+          <button type="button" class="btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; white-space:nowrap;" onclick="bulkAssign()">Assign Agent</button>
+        </div>
+
+        <button type="button" class="btn btn-danger" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; display:inline-flex; align-items:center; gap:0.4rem;" onclick="deleteSelectedUsers()">
+          🗑️ Delete Selected
+        </button>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 45px; text-align: center;">
+                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" style="cursor: pointer; width: 16px; height: 16px;" />
+              </th>
+              <th>User ID</th>
+              <th>Name</th>
+              <th>Assigned Agent</th>
+              <th>Status</th>
+              <th style="text-align: right; width: 220px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody">
+            <tr>
+              <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
+                Loading users directory...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab View 2: Manage Agents -->
+    <div id="viewAgents" class="panel-card" style="display: none;">
+      <div class="panel-title-container">
+        <div class="panel-title">👥 Agent Directory</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary);" id="agentCountText">Loading agents...</div>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Agent ID</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th style="text-align: right; width: 220px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="agentTableBody">
+            <tr>
+              <td colspan="4" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
+                Loading agents directory...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab View 3: Register / Create Forms -->
+    <div id="viewRegister" style="display: none;">
+      
+      <!-- Create Agent Form -->
+      <div class="panel-card">
+        <div class="panel-title-container">
+          <div class="panel-title">➕ Register Agent</div>
+        </div>
+        <form id="formAgent" style="display: flex; flex-direction: column; flex: 1;">
+          <div class="form-group">
+            <label for="agentIdInput">Agent ID (Optional)</label>
+            <input type="text" id="agentIdInput" placeholder="e.g. agent-diana (leaves empty to auto-generate)" />
+          </div>
+          <div class="form-group">
+            <label for="agentNameInput">Agent Name</label>
+            <input type="text" id="agentNameInput" placeholder="e.g. Agent Diana" required />
+          </div>
+          <button type="submit" class="btn" style="margin-top: auto; padding: 0.75rem 1.5rem;">➕ Create Agent</button>
+        </form>
+      </div>
+
+      <!-- Create User Form -->
+      <div class="panel-card">
+        <div class="panel-title-container">
+          <div class="panel-title">➕ Register User</div>
+        </div>
+        <form id="formUser" style="display: flex; flex-direction: column; flex: 1;">
+          <div class="form-group">
+            <label for="userIdInput">User ID (Optional)</label>
+            <input type="text" id="userIdInput" placeholder="e.g. user-diana-1 (leaves empty to auto-generate)" />
+          </div>
+          <div class="form-group">
+            <label for="userNameInput">User Name</label>
+            <input type="text" id="userNameInput" placeholder="e.g. Client Diana 1" required />
+          </div>
+          <div class="form-group">
+            <label for="userAgentSelect">Assign to Agent</label>
+            <select id="userAgentSelect" required>
+              <option value="">Select Agent...</option>
+            </select>
+          </div>
+          <button type="submit" class="btn" style="margin-top: auto; padding: 0.75rem 1.5rem;">➕ Create & Assign User</button>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const formAgent = document.getElementById('formAgent');
+    const agentIdInput = document.getElementById('agentIdInput');
+    const agentNameInput = document.getElementById('agentNameInput');
+    const agentTableBody = document.getElementById('agentTableBody');
+    const agentCountText = document.getElementById('agentCountText');
+
+    const formUser = document.getElementById('formUser');
+    const userIdInput = document.getElementById('userIdInput');
+    const userNameInput = document.getElementById('userNameInput');
+    const userAgentSelect = document.getElementById('userAgentSelect');
+    const bulkAgentSelect = document.getElementById('bulkAgentSelect');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const userTableBody = document.getElementById('userTableBody');
+    const userCountText = document.getElementById('userCountText');
+
+    // On Load
+    window.addEventListener('load', () => {
+      refreshData();
+      // Position tab slider
+      const usersBtn = document.getElementById('tabBtnUsers');
+      const slider = document.querySelector('.tabs-slider');
+      slider.style.left = usersBtn.offsetLeft + 'px';
+      slider.style.width = usersBtn.offsetWidth + 'px';
+    });
+
+    async function refreshData() {
+      await Promise.all([loadAgents(), loadUsers()]);
+    }
+
+    // Switch Tabs inside Admin Panel
+    function switchAdminTab(tabName) {
+      const usersBtn = document.getElementById('tabBtnUsers');
+      const agentsBtn = document.getElementById('tabBtnAgents');
+      const registerBtn = document.getElementById('tabBtnRegister');
+      const slider = document.querySelector('.tabs-slider');
+      
+      const viewUsers = document.getElementById('viewUsers');
+      const viewAgents = document.getElementById('viewAgents');
+      const viewRegister = document.getElementById('viewRegister');
+
+      viewUsers.style.display = 'none';
+      viewAgents.style.display = 'none';
+      viewRegister.style.display = 'none';
+
+      usersBtn.classList.remove('active');
+      agentsBtn.classList.remove('active');
+      registerBtn.classList.remove('active');
+
+      const activeBtn = tabName === 'users' ? usersBtn : (tabName === 'agents' ? agentsBtn : registerBtn);
+      activeBtn.classList.add('active');
+
+      // Align slider indicator
+      slider.style.left = activeBtn.offsetLeft + 'px';
+      slider.style.width = activeBtn.offsetWidth + 'px';
+
+      if (tabName === 'users') {
+        viewUsers.style.display = 'block';
+        loadUsers();
+      } else if (tabName === 'agents') {
+        viewAgents.style.display = 'block';
+        loadAgents();
+      } else if (tabName === 'register') {
+        viewRegister.style.display = 'grid';
+      }
+    }
+
+    async function loadAgents() {
+      try {
+        const res = await fetch('/api/v1/admin/agents');
+        const data = await res.json();
+        
+        agentTableBody.innerHTML = '';
+        userAgentSelect.innerHTML = '<option value="">Select Agent...</option>';
+        bulkAgentSelect.innerHTML = '<option value="">Select Agent...</option>';
+
+        if (data.agents && data.agents.length > 0) {
+          agentCountText.textContent = `${data.agents.length} agent(s) registered`;
+          data.agents.forEach(agent => {
+            // Dropdown option
+            const opt = document.createElement('option');
+            opt.value = agent._id;
+            opt.textContent = `${agent.name} (${agent._id})`;
+            userAgentSelect.appendChild(opt);
+
+            // Bulk dropdown option
+            const bulkOpt = opt.cloneNode(true);
+            bulkAgentSelect.appendChild(bulkOpt);
+
+            // Table row
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td style="font-weight: 600; font-family: monospace;">${agent._id}</td>
+              <td style="font-weight: 500;">${agent.name}</td>
+              <td><span class="status-badge active">online</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn-action" onclick="openChat('${agent._id}', 'agent', '${agent.name}', false)">Connect Here 👑</button>
+                  <button class="btn-action" style="background:#fff;" onclick="openChat('${agent._id}', 'agent', '${agent.name}', true)">New Tab ↗</button>
+                </div>
+              </td>
+            `;
+            agentTableBody.appendChild(tr);
+          });
+        } else {
+          agentCountText.textContent = 'No agents registered';
+          agentTableBody.innerHTML = `
+            <tr>
+              <td colspan="4" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
+                No agents registered in database.
+              </td>
+            </tr>
+          `;
+        }
+      } catch (err) {
+        console.error('Error loading agents:', err);
+        agentTableBody.innerHTML = `
+          <tr>
+            <td colspan="4" style="padding: 2.5rem; text-align: center; color: var(--danger);">
+              Failed to load agents directory.
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/v1/admin/users');
+        const data = await res.json();
+
+        userTableBody.innerHTML = '';
+        selectAllCheckbox.checked = false;
+
+        if (data.users && data.users.length > 0) {
+          userCountText.textContent = `${data.users.length} user(s) registered`;
+          data.users.forEach(user => {
+            const agentName = user.agentId?.name || user.agentId || 'Unassigned';
+            const agentId = user.agentId?._id || user.agentId || '';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td style="text-align: center;">
+                <input type="checkbox" class="user-checkbox" value="${user._id}" style="cursor: pointer; width: 16px; height: 16px;" />
+              </td>
+              <td style="font-family: monospace;">${user._id}</td>
+              <td style="font-weight: 500;">${user.name}</td>
+              <td>
+                <span style="font-weight: 600; color: var(--primary);">${agentName}</span>
+                ${agentId ? `<span style="font-size:0.75rem; color:var(--text-secondary); display:block;">ID: ${agentId}</span>` : ''}
+              </td>
+              <td><span class="status-badge active">active</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn-action" onclick="openChat('${user._id}', 'user', '${user.name}', false)">Connect Here 👤</button>
+                  <button class="btn-action" style="background:#fff;" onclick="openChat('${user._id}', 'user', '${user.name}', true)">New Tab ↗</button>
+                  <button class="btn-action btn-action-danger" onclick="deleteSingleUser('${user._id}', '${user.name}')" title="Delete User">🗑️</button>
+                </div>
+              </td>
+            `;
+            userTableBody.appendChild(tr);
+          });
+        } else {
+          userCountText.textContent = 'No users registered';
+          userTableBody.innerHTML = `
+            <tr>
+              <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
+                No users registered in database.
+              </td>
+            </tr>
+          `;
+        }
+      } catch (err) {
+        console.error('Error loading users:', err);
+        userTableBody.innerHTML = `
+          <tr>
+            <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--danger);">
+              Failed to load users directory.
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    // Toggle Select All checkboxes
+    function toggleSelectAll(selectAllCb) {
+      const checkboxes = document.querySelectorAll('.user-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = selectAllCb.checked;
+      });
+    }
+
+    // Bulk user assignment
+    async function bulkAssign() {
+      const selectedBoxes = document.querySelectorAll('.user-checkbox:checked');
+      if (selectedBoxes.length === 0) {
+        return alert('Please select at least one user to assign!');
+      }
+
+      const agentId = bulkAgentSelect.value;
+      if (!agentId) {
+        return alert('Please select an agent to assign the users to!');
+      }
+
+      const userIds = Array.from(selectedBoxes).map(cb => cb.value);
+
+      try {
+        const res = await fetch('/api/v1/admin/users/assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIds, agentId })
+        });
+        const result = await res.json();
+
+        if (res.ok) {
+          alert(result.message);
+          refreshData();
+        } else {
+          alert(`Error: ${result.error}`);
+        }
+      } catch (err) {
+        alert(`Request failed: ${err.message}`);
+      }
+    }
+
+    // Delete selected users (bulk)
+    async function deleteSelectedUsers() {
+      const selectedBoxes = document.querySelectorAll('.user-checkbox:checked');
+      if (selectedBoxes.length === 0) {
+        return alert('Please select at least one user to delete!');
+      }
+
+      if (!confirm(`Are you sure you want to delete the ${selectedBoxes.length} selected users? This will permanently delete all their chats and message histories.`)) {
+        return;
+      }
+
+      const userIds = Array.from(selectedBoxes).map(cb => cb.value);
+
+      try {
+        const res = await fetch('/api/v1/admin/users', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIds })
+        });
+        const result = await res.json();
+
+        if (res.ok) {
+          alert(result.message);
+          refreshData();
+        } else {
+          alert(`Error: ${result.error}`);
+        }
+      } catch (err) {
+        alert(`Deletion failed: ${err.message}`);
+      }
+    }
+
+    // Delete single user
+    async function deleteSingleUser(userId, userName) {
+      if (!confirm(`Are you sure you want to permanently delete user "${userName}"? This will delete all their conversations and message histories.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/admin/users', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIds: [userId] })
+        });
+        const result = await res.json();
+
+        if (res.ok) {
+          alert(`User "${userName}" deleted successfully!`);
+          refreshData();
+        } else {
+          alert(`Error: ${result.error}`);
+        }
+      } catch (err) {
+        alert(`Deletion failed: ${err.message}`);
+      }
+    }
+
+    // Create Agent Submit
+    formAgent.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = agentIdInput.value.trim();
+      const name = agentNameInput.value.trim();
+
+      try {
+        const res = await fetch('/api/v1/admin/agents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name })
+        });
+        const result = await res.json();
+        
+        if (res.ok) {
+          agentIdInput.value = '';
+          agentNameInput.value = '';
+          alert(`Agent "${result.agent.name}" created successfully!`);
+          refreshData();
+          switchAdminTab('agents');
+        } else {
+          alert(`Error: ${result.error}`);
+        }
+      } catch (err) {
+        alert(`Request failed: ${err.message}`);
+      }
+    });
+
+    // Create User Submit
+    formUser.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = userIdInput.value.trim();
+      const name = userNameInput.value.trim();
+      const agentId = userAgentSelect.value;
+
+      try {
+        const res = await fetch('/api/v1/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name, agentId })
+        });
+        const result = await res.json();
+
+        if (res.ok) {
+          userIdInput.value = '';
+          userNameInput.value = '';
+          userAgentSelect.value = '';
+          alert(`User "${result.user.name}" created and assigned successfully!`);
+          refreshData();
+          switchAdminTab('users');
+        } else {
+          alert(`Error: ${result.error}`);
+        }
+      } catch (err) {
+        alert(`Request failed: ${err.message}`);
+      }
+    });
+
+    // Open Chat Portal helper
+    async function openChat(userId, role, name, openNewWindow = false) {
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, role, name })
+        });
+        const authData = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem('chat_identity', JSON.stringify({
+            role: authData.user.role,
+            token: authData.token,
+            user: authData.user
+          }));
+
+          if (openNewWindow) {
+            window.open('/chat.html', '_blank');
+          } else {
+            window.location.href = '/chat.html';
+          }
+        } else {
+          alert(`Authentication failed: ${authData.error}`);
+        }
+      } catch (err) {
+        alert(`Login failed: ${err.message}`);
+      }
+    }
+  </script>
+</body>
+</html>
