@@ -224,7 +224,7 @@ These endpoints accept raw binary PUT uploads when operating in local developmen
 
 #### `POST /api/v1/admin/agents`
 - **Access**: Public (Convenience for testing)
-- **Description**: Create or register a new agent.
+- **Description**: Create or update an agent.
 - **Request Body**:
   ```json
   {
@@ -247,7 +247,7 @@ These endpoints accept raw binary PUT uploads when operating in local developmen
 
 #### `POST /api/v1/admin/users`
 - **Access**: Public (Convenience for testing)
-- **Description**: Create or register a new user under a specific agent.
+- **Description**: Create or update a user.
 - **Request Body**:
   ```json
   {
@@ -272,7 +272,7 @@ These endpoints accept raw binary PUT uploads when operating in local developmen
 
 #### `POST /api/v1/admin/users/assign`
 - **Access**: Public
-- **Description**: Assign list of users to an agent.
+- **Description**: Assign multiple users to an agent.
 - **Request Body**:
   ```json
   {
@@ -330,7 +330,7 @@ These endpoints accept raw binary PUT uploads when operating in local developmen
 
 #### `DELETE /api/v1/admin/users`
 - **Access**: Public
-- **Description**: Delete registered users, their conversations, and messages.
+- **Description**: Delete users along with their conversations and messages.
 - **Request Body**:
   ```json
   {
@@ -398,15 +398,6 @@ const socket = io({
       }
     }
     ```
-- **Acknowledgement Response (Callback)**:
-  ```json
-  {
-    "status": "queued",
-    "messageId": "msg-12345",
-    "conversationId": "conv-agent-alice-user-alice-1",
-    "createdAt": "2026-08-04T12:00:00.000Z"
-  }
-  ```
 
 #### `message:delivered`
 - **Description**: Inform the server that a specific message has been delivered to the client.
@@ -416,12 +407,6 @@ const socket = io({
     "messageId": "msg-12345",
     "conversationId": "conv-agent-alice-user-alice-1",
     "senderId": "user-alice-1"
-  }
-  ```
-- **Acknowledgement Response (Callback)**:
-  ```json
-  {
-    "success": true
   }
   ```
 
@@ -435,26 +420,12 @@ const socket = io({
     "messageIds": ["msg-12345"]
   }
   ```
-- **Acknowledgement Response (Callback)**:
-  ```json
-  {
-    "success": true,
-    "count": 1
-  }
-  ```
 
 #### `presence:check`
 - **Description**: Query if a specific user/agent is online.
 - **Payload**:
   ```json
   { "userId": "user-alice-1" }
-  ```
-- **Acknowledgement Response (Callback)**:
-  ```json
-  {
-    "userId": "user-alice-1",
-    "isOnline": true
-  }
   ```
 
 ---
