@@ -600,8 +600,8 @@
       <div class="input-bar">
         <input type="text" id="msgInput" placeholder="Type a message..." disabled />
         <button id="btnSendText" class="btn" disabled>Send</button>
-        <button id="btnSendVoice" class="btn btn-secondary" title="Simulate Voice Note" style="padding: 0.55rem 0.75rem;" disabled>🎙️ Voice</button>
-        <button id="btnSendImage" class="btn btn-secondary" title="Send Image" style="padding: 0.55rem 0.75rem;" disabled>📷 Image</button>
+        <button id="btnSendVoice" class="btn btn-secondary" title="Simulate Voice Note" style="padding: 0.55rem 0.75rem;" disabled><span style="margin-right:0.5rem">🎙️</span> Voice</button>
+        <button id="btnSendImage" class="btn btn-secondary" title="Send Image" style="padding: 0.55rem 0.75rem;" disabled>🖼️ Image</button>
         <input type="file" id="imageFileInput" accept="image/*" style="display:none" />
       </div>
     </div>
@@ -1534,9 +1534,10 @@
 
     function agentLogout() {
       localStorage.removeItem('chat_identity');
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       if (socket) socket.disconnect();
       if (presenceInterval) clearInterval(presenceInterval);
-      window.location.href = '/login.html';
+      window.location.href = '/';
     }
 
   </script>

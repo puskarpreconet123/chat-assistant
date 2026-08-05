@@ -39,6 +39,13 @@ export async function login(req, res) {
       name: name || `${role}_${userId}`
     });
 
+    // Set token in cookie for server-side page routing
+    res.cookie('token', token, {
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      httpOnly: false, // allow client-side to read if needed
+      path: '/'
+    });
+
     return res.json({
       token,
       user: {

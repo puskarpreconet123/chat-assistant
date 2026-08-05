@@ -1,0 +1,387 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<script>
+  (function () {
+    try {
+      const cached = localStorage.getItem('chat_identity');
+      if (!cached) {
+        window.location.href = 'login.html';
+        return;
+      }
+      const parsed = JSON.parse(cached);
+      if (!parsed || !parsed.token || !parsed.user || parsed.user.role !== 'user') {
+        window.location.href = 'login.html';
+      }
+    } catch (_) {
+      window.location.href = 'login.html';
+    }
+  })();
+</script>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>History - LuxeBet</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#05e777",
+                        "surface-deep": "#0F1117",
+                        "surface-container": "#1e1f26",
+                        "inverse-primary": "#785900",
+                        "on-surface": "#e2e2eb",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-container": "#6d5100",
+                        "surface-container-low": "#191b22",
+                        "on-primary-fixed": "#261a00",
+                        "surface-tint": "#fabd00",
+                        "tertiary-fixed-dim": "#00daf8",
+                        "surface-variant": "#33343b",
+                        "primary-fixed": "#ffdf9e",
+                        "on-surface-variant": "#d4c5ab",
+                        "surface-dim": "#111319",
+                        "on-background": "#e2e2eb",
+                        "inverse-on-surface": "#2e3037",
+                        "surface-raised": "#171A21",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#004e5a",
+                        "on-secondary-fixed-variant": "#005226",
+                        "surface": "#111319",
+                        "text-muted": "#98A7B5",
+                        "text-primary": "#FFFFFF",
+                        "inverse-surface": "#e2e2eb",
+                        "outline-variant": "#4f4632",
+                        "secondary-fixed": "#62ff96",
+                        "primary": "#ffe4af",
+                        "outline": "#9c8f78",
+                        "tertiary-fixed": "#a5eeff",
+                        "on-error": "#690005",
+                        "surface-bright": "#373940",
+                        "on-primary-fixed-variant": "#5b4300",
+                        "error": "#ffb4ab",
+                        "surface-container-highest": "#33343b",
+                        "secondary": "#7dffa2",
+                        "tertiary-container": "#00defd",
+                        "on-secondary": "#003918",
+                        "on-secondary-container": "#00622e",
+                        "surface-container-high": "#282a30",
+                        "on-tertiary-container": "#005e6c",
+                        "background": "#111319",
+                        "surface-container-lowest": "#0c0e14",
+                        "accent-blue": "#2979FF",
+                        "on-tertiary": "#00363f",
+                        "accent-orange": "#FF9100",
+                        "primary-fixed-dim": "#fabd00",
+                        "on-secondary-fixed": "#00210b",
+                        "primary-container": "#ffc107",
+                        "accent-purple": "#7C4DFF",
+                        "secondary-fixed-dim": "#00e475",
+                        "on-tertiary-fixed": "#001f25",
+                        "on-primary": "#3f2e00",
+                        "tertiary": "#b4f0ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "max-width": "480px",
+                        "margin-mobile": "16px",
+                        "gutter": "12px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Poppins"],
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Poppins"],
+                        "label-numeric": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Poppins"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-numeric": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        html { scrollbar-gutter: stable; }
+        body {
+            background-color: theme('colors.surface-deep');
+            color: theme('colors.on-surface');
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass-panel {
+            background: rgba(23, 26, 33, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        select {
+            background-image: none;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #33343b; border-radius: 4px; }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 228, 117, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 228, 117, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 228, 117, 0); }
+        }
+        .fab-pulse {
+            animation: pulse-glow 2s infinite;
+        }
+    </style>
+<script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('text-primary', 'border-primary');
+                el.classList.add('text-text-muted', 'border-transparent');
+            });
+            
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('text-text-muted', 'border-transparent');
+            activeBtn.classList.add('text-primary', 'border-primary');
+        }
+    </script>
+    <script src="navbar.js"></script>
+</head>
+<body class="flex flex-col min-h-screen bg-surface-deep text-text-primary">
+<!-- TopNavBar Placeholder -->
+<div id="navbar-placeholder"></div>
+<!-- Desktop Layout Container -->
+<main class="w-full max-w-6xl flex-1 flex flex-col relative mx-auto px-6 pb-24 pt-[100px] md:px-10 md:pt-[110px]">
+<!-- Header -->
+<header class="flex justify-between items-center mb-8">
+<div class="flex items-center space-x-4">
+<h1 class="font-display-lg text-3xl text-primary tracking-tight">Transaction History</h1>
+</div>
+
+</header>
+<!-- Tabs -->
+<div class="border-b border-white/10 mb-6 flex space-x-8">
+<button class="tab-btn pb-4 font-body-md border-b-2 hover:text-on-surface transition-colors text-primary border-primary" id="btn-pending" onclick="switchTab('pending')">Pending</button>
+<button class="tab-btn pb-4 font-body-md border-b-2 hover:text-primary transition-colors text-text-muted border-transparent" id="btn-successful" onclick="switchTab('successful')">Successful</button>
+</div>
+<!-- Controls (Filters & Limit) -->
+<div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+<div class="flex items-center space-x-4 w-full md:w-auto">
+<div class="relative w-full md:w-48">
+<select class="w-full bg-surface-raised border border-white/10 text-on-surface text-body-md rounded-lg pl-4 pr-10 py-2.5 appearance-none focus:outline-none focus:border-primary transition-colors cursor-pointer">
+<option>Last 7 Days</option>
+<option selected="">Last 30 Days</option>
+<option>Last 3 Months</option>
+<option>All Time</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">keyboard_arrow_down</span>
+</div>
+</div>
+<div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+<span class="text-text-muted text-body-md">Rows per page:</span>
+<div class="relative w-24">
+<select class="w-full bg-surface-raised border border-white/10 text-on-surface text-body-md rounded-lg pl-4 pr-8 py-2.5 appearance-none focus:outline-none focus:border-primary transition-colors cursor-pointer">
+<option selected="">10</option>
+<option>20</option>
+<option>50</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">keyboard_arrow_down</span>
+</div>
+</div>
+</div>
+<!-- Pending Tab Content -->
+<div class="tab-content flex-1 flex flex-col" id="pending">
+<div class="glass-panel rounded-xl overflow-x-auto border border-white/5 mb-6">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="border-b border-white/5 bg-surface-raised/50">
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Date/Time</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Reference ID</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Payment Method</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted text-right w-1/5">Amount</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted text-center w-1/5">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5 text-body-md bg-surface-deep/40">
+<tr class="hover:bg-surface-raised/30 transition-colors">
+<td class="py-4 px-6 text-on-surface">
+<div class="font-label-numeric">Oct 10, 09:15</div>
+<div class="text-sm text-text-muted mt-1">2023</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-2">
+<span class="font-label-numeric text-text-muted">WDL-443B</span>
+<button class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[18px]">account_balance</span>
+</div>
+<span class="text-text-primary">Bank Transfer</span>
+</div>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-label-numeric text-on-surface font-bold">- $10,000.00</span>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-block px-3 py-1 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/20 font-label-caps">PENDING</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-raised/30 transition-colors">
+<td class="py-4 px-6 text-on-surface">
+<div class="font-label-numeric">Oct 09, 14:22</div>
+<div class="text-sm text-text-muted mt-1">2023</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-2">
+<span class="font-label-numeric text-text-muted">DEP-812C</span>
+<button class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[18px]">currency_bitcoin</span>
+</div>
+<span class="text-text-primary">Bitcoin</span>
+</div>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-label-numeric text-secondary-fixed-dim font-bold">+ $2,500.00</span>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-block px-3 py-1 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/20 font-label-caps">PENDING</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Successful Tab Content (Active by default based on original design contents) -->
+<div class="tab-content flex-1 flex flex-col hidden" id="successful">
+<div class="glass-panel rounded-xl overflow-x-auto border border-white/5 mb-6">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="border-b border-white/5 bg-surface-raised/50">
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Date/Time</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Reference ID</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Payment Method</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted text-right w-1/5">Amount</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted text-center w-1/5">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5 text-body-md bg-surface-deep/40">
+<tr class="hover:bg-surface-raised/30 transition-colors">
+<td class="py-4 px-6 text-on-surface">
+<div class="font-label-numeric">Today, 14:32</div>
+<div class="text-sm text-text-muted mt-1">Oct 14, 2023</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-2">
+<span class="font-label-numeric text-text-muted">TXN-8942A</span>
+<button class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[18px]">currency_bitcoin</span>
+</div>
+<span class="text-text-primary">Crypto Deposit</span>
+</div>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-label-numeric text-secondary-fixed-dim font-bold">+ $5,000.00</span>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-block px-3 py-1 rounded-full bg-secondary-fixed-dim/10 text-secondary-fixed-dim border border-secondary-fixed-dim/20 font-label-caps">COMPLETED</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-raised/30 transition-colors">
+<td class="py-4 px-6 text-on-surface">
+<div class="font-label-numeric">Oct 05, 11:20</div>
+<div class="text-sm text-text-muted mt-1">2023</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-2">
+<span class="font-label-numeric text-text-muted">DEP-331X</span>
+<button class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[18px]">credit_card</span>
+</div>
+<span class="text-text-primary">Credit Card</span>
+</div>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-label-numeric text-secondary-fixed-dim font-bold">+ $1,000.00</span>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-block px-3 py-1 rounded-full bg-secondary-fixed-dim/10 text-secondary-fixed-dim border border-secondary-fixed-dim/20 font-label-caps">COMPLETED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Pagination -->
+<div class="flex items-center justify-between border-t border-white/10 pt-6 mt-auto">
+<div class="text-text-muted font-body-md">
+Showing <span class="text-on-surface font-semibold">1</span> to <span class="text-on-surface font-semibold">10</span> of <span class="text-on-surface font-semibold">45</span> entries
+</div>
+<div class="flex items-center space-x-2">
+<button class="px-4 py-2 rounded-lg border border-white/10 text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="">
+Previous
+</button>
+<div class="flex items-center space-x-1">
+<button class="w-10 h-10 rounded-lg bg-primary text-on-primary-fixed font-semibold flex items-center justify-center">1</button>
+<button class="w-10 h-10 rounded-lg border border-transparent text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors flex items-center justify-center">2</button>
+<button class="w-10 h-10 rounded-lg border border-transparent text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors flex items-center justify-center">3</button>
+<span class="text-text-muted px-2">...</span>
+<button class="w-10 h-10 rounded-lg border border-transparent text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors flex items-center justify-center">5</button>
+</div>
+<button class="px-4 py-2 rounded-lg border border-white/10 text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors">
+Next
+</button>
+</div>
+</div>
+<!-- Floating Chat Button -->
+<button class="fixed bottom-8 right-8 w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center z-40 fab-pulse shadow-2xl text-on-secondary-container hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: &quot;FILL&quot; 1;">forum</span>
+</button>
+</main>
+<script>
+    // Initialize tab state on load
+    document.addEventListener('DOMContentLoaded', () => {
+        switchTab('successful');
+    });
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="chat-widget.js"></script>
+</body></html>

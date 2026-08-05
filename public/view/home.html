@@ -1,0 +1,463 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<script>
+  (function () {
+    try {
+      const cached = localStorage.getItem('chat_identity');
+      if (!cached) {
+        window.location.href = 'login.html';
+        return;
+      }
+      const parsed = JSON.parse(cached);
+      if (!parsed || !parsed.token || !parsed.user || parsed.user.role !== 'user') {
+        window.location.href = 'login.html';
+      }
+    } catch (_) {
+      window.location.href = 'login.html';
+    }
+  })();
+</script>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LuxeBet - Premium Gaming</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-container": "#05e777",
+                    "surface-deep": "#0F1117",
+                    "surface-container": "#1e1f26",
+                    "inverse-primary": "#785900",
+                    "on-surface": "#e2e2eb",
+                    "on-error-container": "#ffdad6",
+                    "on-primary-container": "#6d5100",
+                    "surface-container-low": "#191b22",
+                    "on-primary-fixed": "#261a00",
+                    "surface-tint": "#fabd00",
+                    "tertiary-fixed-dim": "#00daf8",
+                    "surface-variant": "#33343b",
+                    "primary-fixed": "#ffdf9e",
+                    "on-surface-variant": "#d4c5ab",
+                    "surface-dim": "#111319",
+                    "on-background": "#e2e2eb",
+                    "inverse-on-surface": "#2e3037",
+                    "surface-raised": "#171A21",
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed-variant": "#004e5a",
+                    "on-secondary-fixed-variant": "#005226",
+                    "surface": "#111319",
+                    "text-muted": "#98A7B5",
+                    "text-primary": "#FFFFFF",
+                    "inverse-surface": "#e2e2eb",
+                    "outline-variant": "#4f4632",
+                    "secondary-fixed": "#62ff96",
+                    "primary": "#ffe4af",
+                    "outline": "#9c8f78",
+                    "tertiary-fixed": "#a5eeff",
+                    "on-error": "#690005",
+                    "surface-bright": "#373940",
+                    "on-primary-fixed-variant": "#5b4300",
+                    "error": "#ffb4ab",
+                    "surface-container-highest": "#33343b",
+                    "secondary": "#7dffa2",
+                    "tertiary-container": "#00defd",
+                    "on-secondary": "#003918",
+                    "on-secondary-container": "#00622e",
+                    "surface-container-high": "#282a30",
+                    "on-tertiary-container": "#005e6c",
+                    "background": "#111319",
+                    "surface-container-lowest": "#0c0e14",
+                    "accent-blue": "#2979FF",
+                    "on-tertiary": "#00363f",
+                    "accent-orange": "#FF9100",
+                    "primary-fixed-dim": "#fabd00",
+                    "on-secondary-fixed": "#00210b",
+                    "primary-container": "#ffc107",
+                    "accent-purple": "#7C4DFF",
+                    "secondary-fixed-dim": "#00e475",
+                    "on-tertiary-fixed": "#001f25",
+                    "on-primary": "#3f2e00",
+                    "tertiary": "#b4f0ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "8px",
+                    "max-width": "1440px",
+                    "margin-mobile": "16px",
+                    "gutter": "12px"
+            },
+            "fontFamily": {
+                    "headline-lg": [
+                            "Poppins"
+                    ],
+                    "label-caps": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Poppins"
+                    ],
+                    "label-numeric": [
+                            "JetBrains Mono"
+                    ],
+                    "headline-lg-mobile": [
+                            "Poppins"
+                    ]
+            },
+            "fontSize": {
+                    "headline-lg": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg": [
+                            "40px",
+                            {
+                                    "lineHeight": "48px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-numeric": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        html { scrollbar-gutter: stable; }
+        body {
+            background-color: #0F1117;
+            color: #e2e2eb;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .glass-panel {
+            background: rgba(23, 26, 33, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #ffe4af 0%, #fabd00 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .gold-gradient-bg {
+            background: linear-gradient(135deg, #ffe4af 0%, #fabd00 100%);
+        }
+
+        .emerald-glow {
+            box-shadow: 0 0 15px rgba(0, 228, 117, 0.3);
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 228, 117, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 228, 117, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 228, 117, 0); }
+        }
+        
+        .fab-pulse {
+            animation: pulse-glow 2s infinite;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #33343b; border-radius: 4px; }
+    </style>
+    <script src="navbar.js"></script>
+</head>
+<body class="bg-surface-deep flex flex-col items-center min-h-screen">
+<div class="w-full bg-surface relative pb-[90px] min-h-screen overflow-x-hidden">
+<!-- TopNavBar -->
+<!-- TopNavBar Placeholder -->
+<div id="navbar-placeholder"></div>
+<main class="pt-[90px] px-6 max-w-[1440px] mx-auto w-full flex flex-col gap-10 pb-12">
+<!-- Promotional Slider -->
+<section class="relative w-full h-[300px] md:h-[400px] lg:h-[480px] rounded-2xl overflow-hidden glass-panel border-white/10 shadow-2xl">
+<div class="slide absolute inset-0 transition-all duration-1000 opacity-100 bg-cover bg-center z-0" style="background-image: url('images/banner_gaming.png');"></div>
+<div class="slide absolute inset-0 transition-all duration-1000 opacity-0 bg-cover bg-center z-0" style="background-image: url('images/banner_recharge.png');"></div>
+<div class="slide absolute inset-0 transition-all duration-1000 opacity-0 bg-cover bg-center z-0" style="background-image: url('images/banner_wallet.png');"></div>
+<div class="absolute inset-0 bg-gradient-to-r from-surface-deep via-surface-deep/80 to-transparent z-10 p-8 md:p-16 flex flex-col justify-center max-w-2xl">
+<span class="font-label-caps text-label-caps text-secondary-fixed-dim tracking-[0.2em] mb-4 flex items-center gap-2">
+<span class="w-8 h-[1px] bg-secondary-fixed-dim"></span> WELCOME BONUS
+                        </span>
+<h2 id="slide-title" class="font-display-lg text-[32px] md:text-display-lg text-primary mb-6 leading-tight">100% Match up to <br><span class="gold-gradient-text">₹50,000</span></h2>
+<p id="slide-desc" class="font-body-md text-text-muted mb-8 text-lg">Join the ultimate premium gaming experience today and double your first deposit instantly.</p>
+</div>
+<div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+<div class="dot w-8 h-2 rounded-full bg-primary cursor-pointer transition-all"></div>
+<div class="dot w-2 h-2 rounded-full bg-white/30 hover:bg-white/60 cursor-pointer transition-all"></div>
+<div class="dot w-2 h-2 rounded-full bg-white/30 hover:bg-white/60 cursor-pointer transition-all"></div>
+</div>
+</section>
+<!-- Dashboard Section -->
+<section>
+<h3 class="font-headline-lg text-headline-lg text-primary mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary-fixed-dim">dashboard</span> Dashboard
+                </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-secondary-fixed-dim/30 transition-colors">
+<div class="absolute -right-10 -top-10 w-32 h-32 bg-secondary-fixed-dim/10 rounded-full blur-2xl group-hover:bg-secondary-fixed-dim/20 transition-all"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[32px]">verified</span>
+<span class="bg-secondary-fixed-dim/20 text-secondary-fixed-dim text-[10px] font-bold px-2 py-1 rounded-md tracking-wider">ACTIVE</span>
+</div>
+<h4 class="font-label-caps text-text-muted mb-1">Active Subscription</h4>
+<div class="font-label-numeric text-[24px] text-white">1</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors">
+<div class="absolute -right-10 -top-10 w-32 h-32 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-primary text-[32px]">pending_actions</span>
+<span class="bg-surface-variant text-text-muted text-[10px] font-bold px-2 py-1 rounded-md tracking-wider">PENDING</span>
+</div>
+<h4 class="font-label-caps text-text-muted mb-1">Pending Subscription</h4>
+<div class="font-label-numeric text-[24px] text-white">None</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div onclick="window.location.href='recharge.html'" class="glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-secondary-fixed-dim/30 transition-colors cursor-pointer">
+<div class="absolute -right-10 -top-10 w-32 h-32 bg-secondary-fixed-dim/10 rounded-full blur-2xl group-hover:bg-secondary-fixed-dim/20 transition-all"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[32px]">account_balance_wallet</span>
+<span class="bg-secondary-fixed-dim/20 text-secondary-fixed-dim text-[10px] font-bold px-2 py-1 rounded-md tracking-wider">SUCCESS</span>
+</div>
+<h4 class="font-label-caps text-text-muted mb-1">Active Recharges</h4>
+<div class="font-label-numeric text-[24px] text-white">₹12,500</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div onclick="window.location.href='recharge.html'" class="glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors cursor-pointer">
+<div class="absolute -right-10 -top-10 w-32 h-32 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-primary text-[32px]">hourglass_empty</span>
+<span class="bg-surface-variant text-text-muted text-[10px] font-bold px-2 py-1 rounded-md tracking-wider">PENDING</span>
+</div>
+<h4 class="font-label-caps text-text-muted mb-1">Pending Recharges</h4>
+<div class="font-label-numeric text-[24px] text-white">₹5,000</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Featured Games Grid -->
+<section>
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-lg text-headline-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">casino</span> Featured Games
+                </h3>
+<button class="font-label-caps text-label-caps text-secondary-fixed-dim hover:text-white transition-colors flex items-center gap-1">SEE ALL <span class="material-symbols-outlined text-[16px]">arrow_forward</span></button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Game 1 -->
+<div class="h-[320px] rounded-xl relative overflow-hidden glass-panel group flex flex-col justify-end">
+<img alt="Roulette" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-all duration-500 group-hover:scale-105" data-alt="A vertical poster for a high-stakes roulette game, glowing red and black wheel, intense cinematic lighting, luxury casino environment, shiny surfaces." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMzIyuuVXoHCmNmD1qe1mg5Rj_zowhGmG_he61GuCTf4Tf-2XUb02JBzHTAkGlOZVJwmnil07CGcjXwvWs1ptoUzESN0W5ys5hqVLieCanPmk-x8ricoXO6jeRJjuSJSEirYhjuUxe5ZiyRiEdyMeLVb_mCnc-2v_pWZIKzmmyFq0uNzZTm3jsXnfPR9wSY2RkjMqpKKxgwIfFmQzVff4evHahTNsZuMjsP03Ac4np6qha1scOJtvf">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-deep via-surface-deep/50 to-transparent"></div>
+
+<div class="relative z-10 p-5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+<div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-white mb-1">VIP Roulette</div>
+
+<div class="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+<button class="flex-1 bg-secondary-fixed-dim hover:bg-secondary-fixed text-surface-deep font-label-caps text-label-caps py-2 rounded-lg font-bold transition-colors">VISIT</button>
+<button class="w-12 h-10 bg-surface/80 border border-white/20 hover:bg-surface-raised rounded-lg flex items-center justify-center text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Game 2 -->
+<div class="h-[320px] rounded-xl relative overflow-hidden glass-panel group flex flex-col justify-end">
+<img alt="Blackjack" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-all duration-500 group-hover:scale-105" data-alt="A vertical poster for a premium blackjack game, crisp green felt, glowing neon cards, sophisticated high-end aesthetic, moody dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAybZ6VtCrw9mTeq7bTD_K3T4m8NVpETP0m6tlxAFMKFRmonxrxZiQUovMM31gV0FBVR4_x0kW4NLrH3Ss09jU1KNV8kx0_Dg2CW-1VQliP2_ZPOhV1iU7IkqZRRYR7O0zbpWqLkoBfKZ8e5xHIsnEIH3A-9Cl7OEQtTMlmgPwzuo9Q654DpU61z_BQhQySo2gh6eeI2271mTUpH4geEYovx_h-3fH7__yPiOSTcIZc34JXAZqRZRWC">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-deep via-surface-deep/50 to-transparent"></div>
+
+<div class="relative z-10 p-5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+<div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-white mb-1">Blackjack Pro</div>
+
+<div class="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+<button class="flex-1 bg-secondary-fixed-dim hover:bg-secondary-fixed text-surface-deep font-label-caps text-label-caps py-2 rounded-lg font-bold transition-colors">VISIT</button>
+<button class="w-12 h-10 bg-surface/80 border border-white/20 hover:bg-surface-raised rounded-lg flex items-center justify-center text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Game 3 -->
+<div class="h-[320px] rounded-xl relative overflow-hidden glass-panel group flex flex-col justify-end">
+<img alt="Slots" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-all duration-500 group-hover:scale-105" data-alt="A vertical poster for a futuristic slots game, vibrant neon purples and blues, sci-fi metallic elements, high energy, crisp details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTFsy96-jIm_OIuJ-6YtDp95sqOBoLihij9IciI-A4mjATgFyGEuwAlqtY-QUImjwP56aazyJr_Ub6zJeeK2yhOvr0Fl8CL65CuHES3iNZlC2J7UUTZ_XE_NthQsZP2yl6QeAmycKTf4c9-xWVNOJE02wuflmbWI1ltHYeb5fX5ySgKKvQEGE5-V2TvMyT3JH8-0FQXV1lzBtV-uK_-OLK634gaKNHXC4h6S7tQtvfszt5yj3z4pER">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-deep via-surface-deep/50 to-transparent"></div>
+<div class="relative z-10 p-5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+<div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-white mb-1">Cyber Slots</div>
+
+<div class="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+<button class="flex-1 bg-secondary-fixed-dim hover:bg-secondary-fixed text-surface-deep font-label-caps text-label-caps py-2 rounded-lg font-bold transition-colors">VISIT</button>
+<button class="w-12 h-10 bg-surface/80 border border-white/20 hover:bg-surface-raised rounded-lg flex items-center justify-center text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Game 4 -->
+<div class="h-[320px] rounded-xl relative overflow-hidden glass-panel group flex flex-col justify-end border border-primary/20">
+<div class="absolute inset-0 bg-surface-raised flex flex-col items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity duration-500">
+<span class="material-symbols-outlined text-primary text-[48px] mb-2" style="font-variation-settings: &quot;FILL&quot; 1;">playing_cards</span>
+<div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-white mb-2">Baccarat VIP</div>
+
+</div>
+</div>
+</div>
+</section>
+<!-- Popular Categories Grid -->
+<section>
+<h3 class="font-headline-lg text-headline-lg text-primary mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">category</span> Categories
+                </h3>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+<div class="h-32 glass-panel rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-surface-raised transition-all cursor-pointer border-t-2 border-secondary-fixed-dim/50 hover:shadow-[0_4px_20px_rgba(0,228,117,0.15)] group">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-[40px] group-hover:scale-110 transition-transform" style="font-variation-settings: &quot;FILL&quot; 1;">casino</span>
+<span class="font-label-caps text-label-caps text-primary tracking-widest font-bold">CASINO</span>
+</div>
+<div class="h-32 glass-panel rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-surface-raised transition-all cursor-pointer border-t-2 border-accent-blue/50 hover:shadow-[0_4px_20px_rgba(41,121,255,0.15)] group">
+<span class="material-symbols-outlined text-accent-blue text-[40px] group-hover:scale-110 transition-transform" style="font-variation-settings: &quot;FILL&quot; 1;">sports_esports</span>
+<span class="font-label-caps text-label-caps text-primary tracking-widest font-bold">SPORTS</span>
+</div>
+<div class="h-32 glass-panel rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-surface-raised transition-all cursor-pointer border-t-2 border-primary-fixed-dim/50 hover:shadow-[0_4px_20px_rgba(250,189,0,0.15)] group">
+<span class="material-symbols-outlined text-primary-fixed-dim text-[40px] group-hover:scale-110 transition-transform" style="font-variation-settings: &quot;FILL&quot; 1;">confirmation_number</span>
+<span class="font-label-caps text-label-caps text-primary tracking-widest font-bold">LOTTERY</span>
+</div>
+<div class="h-32 glass-panel rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-surface-raised transition-all cursor-pointer border-t-2 border-accent-purple/50 hover:shadow-[0_4px_20px_rgba(124,77,255,0.15)] group">
+<span class="material-symbols-outlined text-accent-purple text-[40px] group-hover:scale-110 transition-transform" style="font-variation-settings: &quot;FILL&quot; 1;">playing_cards</span>
+<span class="font-label-caps text-label-caps text-primary tracking-widest font-bold">TABLES</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Chat Button -->
+<button class="fixed bottom-8 right-8 w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center z-40 fab-pulse shadow-2xl text-on-secondary-container hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: &quot;FILL&quot; 1;">forum</span>
+</button>
+</div>
+
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.dot');
+    
+    const slideData = [
+        {
+            title: "100% Match up to <br><span class='gold-gradient-text'>₹50,000</span>",
+            desc: "Join the ultimate premium gaming experience today and double your first deposit instantly."
+        },
+        {
+            title: "Quick & Secure <br><span class='gold-gradient-text'>Recharge Options</span>",
+            desc: "Add funds directly to your preferred exchange platform with high-speed automated processing."
+        },
+        {
+            title: "Premium Virtual <br><span class='gold-gradient-text'>Wallet Management</span>",
+            desc: "Review your detailed deposit history, pending statuses, and active subscription perks."
+        }
+    ];
+
+    const titleElement = document.getElementById('slide-title');
+    const descElement = document.getElementById('slide-desc');
+
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            if (i === index) {
+                slide.classList.remove('opacity-0');
+                slide.classList.add('opacity-100');
+                dots[i].classList.remove('w-2', 'bg-white/30');
+                dots[i].classList.add('w-8', 'bg-primary');
+            } else {
+                slide.classList.remove('opacity-100');
+                slide.classList.add('opacity-0');
+                dots[i].classList.remove('w-8', 'bg-primary');
+                dots[i].classList.add('w-2', 'bg-white/30');
+            }
+        });
+        if (titleElement) {
+            titleElement.innerHTML = slideData[index].title;
+        }
+        if (descElement) {
+            descElement.textContent = slideData[index].desc;
+        }
+        currentSlide = index;
+    }
+
+    function nextSlide() {
+        let next = (currentSlide + 1) % slides.length;
+        showSlide(next);
+    }
+
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            showSlide(index);
+        });
+    });
+
+    setInterval(nextSlide, 5000);
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="chat-widget.js"></script>
+</body></html>

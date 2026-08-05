@@ -1,0 +1,370 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<script>
+  (function () {
+    try {
+      const cached = localStorage.getItem('chat_identity');
+      if (!cached) {
+        window.location.href = 'login.html';
+        return;
+      }
+      const parsed = JSON.parse(cached);
+      if (!parsed || !parsed.token || !parsed.user || parsed.user.role !== 'user') {
+        window.location.href = 'login.html';
+      }
+    } catch (_) {
+      window.location.href = 'login.html';
+    }
+  })();
+</script>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LuxeBet - Recharge</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-container-lowest": "#0c0e14",
+                "on-tertiary-fixed-variant": "#004e5a",
+                "on-secondary": "#003918",
+                "surface-deep": "#0F1117",
+                "tertiary": "#b4f0ff",
+                "secondary": "#7dffa2",
+                "outline-variant": "#4f4632",
+                "accent-purple": "#7C4DFF",
+                "primary-container": "#ffc107",
+                "surface-raised": "#171A21",
+                "on-tertiary-container": "#005e6c",
+                "surface-variant": "#33343b",
+                "surface-container": "#1e1f26",
+                "outline": "#9c8f78",
+                "secondary-fixed": "#62ff96",
+                "text-muted": "#98A7B5",
+                "tertiary-fixed": "#a5eeff",
+                "surface-container-highest": "#33343b",
+                "on-error-container": "#ffdad6",
+                "tertiary-fixed-dim": "#00daf8",
+                "on-surface": "#e2e2eb",
+                "on-primary-fixed-variant": "#5b4300",
+                "text-primary": "#FFFFFF",
+                "inverse-surface": "#e2e2eb",
+                "surface-container-low": "#191b22",
+                "primary": "#ffe4af",
+                "on-tertiary": "#00363f",
+                "secondary-fixed-dim": "#00e475",
+                "surface-bright": "#373940",
+                "surface-container-high": "#282a30",
+                "secondary-container": "#05e777",
+                "background": "#111319",
+                "on-primary-container": "#6d5100",
+                "on-primary-fixed": "#261a00",
+                "primary-fixed-dim": "#fabd00",
+                "inverse-on-surface": "#2e3037",
+                "error": "#ffb4ab",
+                "inverse-primary": "#785900",
+                "on-background": "#e2e2eb",
+                "accent-orange": "#FF9100",
+                "on-tertiary-fixed": "#001f25",
+                "tertiary-container": "#00defd",
+                "surface-tint": "#fabd00",
+                "on-secondary-fixed": "#00210b",
+                "error-container": "#93000a",
+                "on-secondary-fixed-variant": "#005226",
+                "on-error": "#690005",
+                "on-surface-variant": "#d4c5ab",
+                "surface": "#111319",
+                "surface-dim": "#111319",
+                "primary-fixed": "#ffdf9e",
+                "on-secondary-container": "#00622e",
+                "on-primary": "#3f2e00",
+                "accent-blue": "#2979FF"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "max-width": "1200px",
+                "gutter": "12px",
+                "base": "8px",
+                "margin-mobile": "16px"
+        },
+        "fontFamily": {
+                "label-caps": [
+                        "Inter"
+                ],
+                "display-lg": [
+                        "Poppins"
+                ],
+                "headline-lg-mobile": [
+                        "Poppins"
+                ],
+                "body-md": [
+                        "Inter"
+                ],
+                "label-numeric": [
+                        "JetBrains Mono"
+                ],
+                "headline-lg": [
+                        "Poppins"
+                ]
+        },
+        "fontSize": {
+                "label-caps": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg": [
+                        "40px",
+                        {
+                                "lineHeight": "48px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-numeric": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        html { scrollbar-gutter: stable; }
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(23, 26, 33, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 228, 117, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 228, 117, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 228, 117, 0); }
+        }
+        .fab-pulse {
+            animation: pulse-glow 2s infinite;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #33343b; border-radius: 4px; }
+    </style>
+    <script>
+        function setAmount(amount) {
+            document.getElementById('amount-input').value = amount;
+        }
+
+        function updateBookSelection() {
+            const labels = document.querySelectorAll('.book-option');
+            labels.forEach(label => {
+                const radio = label.querySelector('input[type="radio"]');
+                const icon = label.querySelector('.material-symbols-outlined');
+                const details = label.querySelector('.book-details');
+                
+                if (radio.checked) {
+                    label.classList.add('border-secondary-fixed-dim/50', 'shadow-[0_0_15px_rgba(0,228,117,0.05)]');
+                    label.classList.remove('opacity-80', 'hover:border-white/20');
+                    label.classList.add('hover:border-secondary-fixed-dim');
+                    
+                    if (icon) {
+                        icon.classList.add('text-secondary-fixed-dim');
+                        icon.classList.remove('text-text-muted');
+                    }
+                    
+                    if (details) {
+                        let activeBadge = details.querySelector('.active-badge');
+                        if (!activeBadge) {
+                            activeBadge = document.createElement('p');
+                            activeBadge.className = 'active-badge font-label-caps text-label-caps text-secondary-fixed-dim mt-0.5';
+                            activeBadge.textContent = 'Active';
+                            details.appendChild(activeBadge);
+                        }
+                    }
+                } else {
+                    label.classList.remove('border-secondary-fixed-dim/50', 'shadow-[0_0_15px_rgba(0,228,117,0.05)]', 'hover:border-secondary-fixed-dim');
+                    label.classList.add('opacity-80', 'hover:border-white/20');
+                    
+                    if (icon) {
+                        icon.classList.remove('text-secondary-fixed-dim');
+                        icon.classList.add('text-text-muted');
+                    }
+                    
+                    if (details) {
+                        const activeBadge = details.querySelector('.active-badge');
+                        if (activeBadge) {
+                            activeBadge.remove();
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateBookSelection();
+        });
+    </script>
+    <script src="navbar.js"></script>
+</head>
+<body class="flex flex-col min-h-screen bg-surface-deep text-text-primary">
+<!-- TopNavBar Placeholder -->
+<div id="navbar-placeholder"></div>
+<main class="w-full max-w-6xl flex-1 flex flex-col relative mx-auto px-6 pb-24 pt-[100px] md:px-10 md:pt-[110px]">
+<header class="flex justify-between items-center mb-8">
+<div class="flex items-center space-x-4">
+<h1 class="font-display-lg text-3xl text-primary tracking-tight">Recharge</h1>
+</div>
+<div class="flex items-center gap-2 bg-surface-raised px-4 py-2 rounded-full border border-white/5">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-sm" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">shield</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Secure Transaction</span>
+</div>
+</header>
+<div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-8 items-start z-10 w-full mt-6">
+ <div class="md:col-span-7 flex flex-col gap-4 glass-panel rounded-xl p-6">
+<section class="flex flex-col gap-4 flex-1">
+<h2 class="font-body-md text-body-md text-text-primary font-semibold">Select Book</h2>
+<div class="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-2">
+<label class="book-option glass-panel rounded-xl p-3 flex items-center justify-between cursor-pointer border border-secondary-fixed-dim/50 shadow-[0_0_15px_rgba(0,228,117,0.05)] hover:border-secondary-fixed-dim transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary-fixed-dim">sports_cricket</span>
+</div>
+<div class="book-details">
+<p class="font-body-md text-body-md text-text-primary">Cricket Book 365</p>
+<p class="active-badge font-label-caps text-label-caps text-secondary-fixed-dim mt-0.5">Active</p>
+</div>
+</div>
+<input checked="" onchange="updateBookSelection()" class="form-radio text-secondary-fixed-dim bg-surface-deep border-outline-variant focus:ring-secondary-fixed-dim focus:ring-offset-surface-deep w-5 h-5 cursor-pointer" name="book" type="radio">
+</label>
+<label class="book-option glass-panel rounded-xl p-3 flex items-center justify-between cursor-pointer opacity-80 hover:opacity-100 hover:border-white/20 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-text-muted">local_florist</span>
+</div>
+<div class="book-details">
+<p class="font-body-md text-body-md text-text-primary">Lotus Exchange</p>
+</div>
+</div>
+<input onchange="updateBookSelection()" class="form-radio text-secondary-fixed-dim bg-surface-deep border-outline-variant focus:ring-secondary-fixed-dim focus:ring-offset-surface-deep w-5 h-5 cursor-pointer" name="book" type="radio">
+</label>
+<label class="book-option glass-panel rounded-xl p-3 flex items-center justify-between cursor-pointer opacity-80 hover:opacity-100 hover:border-white/20 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-text-muted">diamond</span>
+</div>
+<div class="book-details">
+<p class="font-body-md text-body-md text-text-primary">Diamond Casino</p>
+</div>
+</div>
+<input onchange="updateBookSelection()" class="form-radio text-secondary-fixed-dim bg-surface-deep border-outline-variant focus:ring-secondary-fixed-dim focus:ring-offset-surface-deep w-5 h-5 cursor-pointer" name="book" type="radio">
+</label>
+<label class="book-option glass-panel rounded-xl p-3 flex items-center justify-between cursor-pointer opacity-80 hover:opacity-100 hover:border-white/20 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-text-muted">cloud</span>
+</div>
+<div class="book-details">
+<p class="font-body-md text-body-md text-text-primary">Sky Exchange</p>
+</div>
+</div>
+<input onchange="updateBookSelection()" class="form-radio text-secondary-fixed-dim bg-surface-deep border-outline-variant focus:ring-secondary-fixed-dim focus:ring-offset-surface-deep w-5 h-5 cursor-pointer" name="book" type="radio">
+</label>
+<label class="book-option glass-panel rounded-xl p-3 flex items-center justify-between cursor-pointer opacity-80 hover:opacity-100 hover:border-white/20 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-text-muted">sports_esports</span>
+</div>
+<div class="book-details">
+<p class="font-body-md text-body-md text-text-primary">Fairplay Book</p>
+</div>
+</div>
+<input onchange="updateBookSelection()" class="form-radio text-secondary-fixed-dim bg-surface-deep border-outline-variant focus:ring-secondary-fixed-dim focus:ring-offset-surface-deep w-5 h-5 cursor-pointer" name="book" type="radio">
+</label>
+<label class="book-option glass-panel rounded-xl p-3 flex items-center justify-between cursor-pointer opacity-80 hover:opacity-100 hover:border-white/20 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-text-muted">workspace_premium</span>
+</div>
+<div class="book-details">
+<p class="font-body-md text-body-md text-text-primary">Premium Sports Book</p>
+</div>
+</div>
+<input onchange="updateBookSelection()" class="form-radio text-secondary-fixed-dim bg-surface-deep border-outline-variant focus:ring-secondary-fixed-dim focus:ring-offset-surface-deep w-5 h-5 cursor-pointer" name="book" type="radio">
+</label>
+</div>
+</section>
+</div>
+<div class="md:col-span-5 flex flex-col gap-6 glass-panel rounded-xl p-6">
+<section class="flex flex-col gap-4">
+<h2 class="font-body-md text-body-md text-text-primary font-semibold">Select Amount</h2>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 font-label-numeric text-label-numeric text-primary text-lg">₹</span>
+<input id="amount-input" class="w-full bg-surface-raised border border-white/10 rounded-xl py-4 pl-10 pr-4 font-label-numeric text-label-numeric text-text-primary focus:outline-none focus:ring-1 focus:ring-secondary-fixed-dim focus:border-secondary-fixed-dim transition-all placeholder:text-surface-variant text-xl" placeholder="Enter amount..." type="number">
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button onclick="setAmount(500)" class="bg-surface-raised hover:bg-surface-variant/50 border border-white/5 rounded-lg py-3.5 font-label-numeric text-label-numeric text-on-surface hover:text-primary transition-all duration-200">₹500</button>
+<button onclick="setAmount(1000)" class="bg-surface-raised hover:bg-surface-variant/50 border border-white/5 rounded-lg py-3.5 font-label-numeric text-label-numeric text-on-surface hover:text-primary transition-all duration-200">₹1,000</button>
+<button onclick="setAmount(5000)" class="bg-surface-raised hover:bg-surface-variant/50 border border-white/5 rounded-lg py-3.5 font-label-numeric text-label-numeric text-on-surface hover:text-primary transition-all duration-200">₹5,000</button>
+<button onclick="setAmount(10000)" class="bg-surface-raised hover:bg-surface-variant/50 border border-white/5 rounded-lg py-3.5 font-label-numeric text-label-numeric text-on-surface hover:text-primary transition-all duration-200">₹10,000</button>
+</div>
+</section>
+<button onclick="window.location.href='records.html'" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-2">
+                Send
+            </button>
+</div>
+</div>
+<!-- Floating Chat Button -->
+<button class="fixed bottom-8 right-8 w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center z-40 fab-pulse shadow-2xl text-on-secondary-container hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: &quot;FILL&quot; 1;">forum</span>
+</button>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script src="chat-widget.js"></script>
+</body></html>

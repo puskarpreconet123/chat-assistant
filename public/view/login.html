@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LuxeBet - Premium Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@600&amp;family=Poppins:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "text-muted": "#98A7B5",
+                    "surface": "#111319",
+                    "surface-deep": "#0F1117",
+                    "tertiary-container": "#00defd",
+                    "primary": "#ffe4af",
+                    "on-primary-fixed-variant": "#5b4300",
+                    "error-container": "#93000a",
+                    "tertiary-fixed": "#a5eeff",
+                    "error": "#ffb4ab",
+                    "on-background": "#e2e2eb",
+                    "surface-raised": "#171A21",
+                    "on-error-container": "#ffdad6",
+                    "primary-container": "#ffc107",
+                    "text-primary": "#FFFFFF",
+                    "on-error": "#690005",
+                    "secondary": "#7dffa2",
+                    "surface-dim": "#111319",
+                    "on-primary-fixed": "#261a00",
+                    "outline-variant": "#4f4632",
+                    "on-tertiary-fixed-variant": "#004e5a",
+                    "on-primary-container": "#6d5100",
+                    "inverse-on-surface": "#2e3037",
+                    "on-tertiary-fixed": "#001f25",
+                    "inverse-primary": "#785900",
+                    "secondary-fixed": "#62ff96",
+                    "inverse-surface": "#e2e2eb",
+                    "tertiary-fixed-dim": "#00daf8",
+                    "on-tertiary-container": "#005e6c",
+                    "on-secondary-fixed": "#00210b",
+                    "secondary-container": "#05e777",
+                    "on-secondary-fixed-variant": "#005226",
+                    "on-tertiary": "#00363f",
+                    "on-surface": "#e2e2eb",
+                    "on-surface-variant": "#d4c5ab",
+                    "on-secondary-container": "#00622e",
+                    "primary-fixed": "#ffdf9e",
+                    "on-secondary": "#003918",
+                    "surface-container-low": "#191b22",
+                    "on-primary": "#3f2e00",
+                    "surface-container-highest": "#33343b",
+                    "surface-variant": "#33343b",
+                    "surface-bright": "#373940",
+                    "surface-container-lowest": "#0c0e14",
+                    "accent-blue": "#2979FF",
+                    "surface-container-high": "#282a30",
+                    "tertiary": "#b4f0ff",
+                    "surface-container": "#1e1f26",
+                    "background": "#111319",
+                    "accent-orange": "#FF9100",
+                    "surface-tint": "#fabd00",
+                    "accent-purple": "#7C4DFF",
+                    "secondary-fixed-dim": "#00e475",
+                    "outline": "#9c8f78",
+                    "primary-fixed-dim": "#fabd00"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "12px",
+                    "margin-mobile": "16px",
+                    "base": "8px",
+                    "max-width": "480px"
+            },
+            "fontFamily": {
+                    "label-numeric": [
+                            "JetBrains Mono"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-lg-mobile": [
+                            "Poppins"
+                    ],
+                    "label-caps": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Poppins"
+                    ],
+                    "display-lg": [
+                            "Poppins"
+                    ]
+            },
+            "fontSize": {
+                    "label-numeric": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "display-lg": [
+                            "40px",
+                            {
+                                    "lineHeight": "48px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(23, 26, 33, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px -10px rgba(125, 255, 162, 0.1);
+        }
+        .bg-ambient {
+            background: radial-gradient(circle at 50% 0%, rgba(125, 255, 162, 0.15), transparent 50%),
+                        radial-gradient(circle at 100% 100%, rgba(255, 193, 7, 0.1), transparent 50%);
+        }
+        .btn-gold-gradient {
+            background: linear-gradient(135deg, #FFC107 0%, #D4AF37 100%);
+            color: #111319;
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-gold-gradient:hover {
+            box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5);
+            transform: translateY(-1px);
+        }
+        .input-glow:focus {
+            box-shadow: 0 0 0 1px #7dffa2, 0 0 10px rgba(125, 255, 162, 0.2);
+            border-color: #7dffa2;
+        }
+    </style>
+</head>
+<body class="bg-surface-deep text-on-surface font-body-md text-body-md min-h-screen flex items-center justify-center relative overflow-hidden antialiased">
+<!-- Atmospheric Background -->
+<div class="absolute inset-0 z-0">
+<div class="bg-cover bg-center w-full h-full opacity-30 mix-blend-overlay" data-alt="A sophisticated, high-end casino atmosphere in extremely low lighting. The scene features blurred background elements suggesting velvet ropes, crystal chandeliers, and polished mahogany tables. The color palette is dominated by deep, obsidian blacks and midnight blues, with subtle, out-of-focus bokeh lights in emerald green and warm gold. The overall mood is exclusive, mysterious, and luxurious." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCbpJudyo9PJUAZNG7mpB02lpMC6AAlMQN9IeRhgljOeewvRCTour7QoirrbOG44AGJdV1WCUUpkSqVd2TP-ZJRJfmC9AELW2dBMkD25RHWaNdyjZXUEImqBOOGk-OkKOspOwCSJP_unmVh09-1Ksg14k2oCQ-yMZdsYjRl9ovHv21DucA5ME4JkXWtHGD5IutYeeDwTXlfS0Gcc4dVHgMPx3a8F7e9rPtOrKkxza8HAxLndsdIua37')"></div>
+<div class="absolute inset-0 bg-surface-deep/80 bg-ambient"></div>
+</div>
+<!-- Login Container -->
+<main class="relative z-10 w-full max-w-[480px] px-6 py-12 md:py-0 flex flex-col items-center">
+<!-- Brand -->
+<div class="mb-10 text-center">
+<h1 class="font-display-lg text-display-lg text-primary tracking-tighter">LuxeBet</h1>
+</div>
+<!-- Glassmorphism Card -->
+<div class="glass-card w-full rounded-xl p-8 relative overflow-hidden">
+<!-- Subtle Emerald Top Glow -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary to-transparent opacity-50"></div>
+<div class="text-center mb-8">
+<h2 class="font-headline-lg text-headline-lg text-text-primary mb-2">Welcome Back</h2>
+<p class="text-text-muted font-body-md text-body-md">Login to your LuxeBet account</p>
+</div>
+<div id="errorMsg" class="hidden text-error bg-error-container/10 border border-error-container/20 text-sm rounded-lg p-3 text-center mb-4" style="color: #ffb4ab; background: rgba(147, 0, 10, 0.1); border: 1px solid rgba(147, 0, 10, 0.2);"></div>
+<form class="space-y-6" onsubmit="handleLogin(event)">
+<!-- Input Group: Username -->
+<div class="space-y-2">
+<label class="block font-label-caps text-label-caps text-text-muted uppercase" for="username">Email or Username</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">person</span>
+<input class="w-full bg-surface-raised border border-transparent rounded-lg py-3 pl-12 pr-4 text-text-primary placeholder-text-muted focus:outline-none input-glow transition-all duration-300" id="username" placeholder="Enter your credentials" type="text" required/>
+</div>
+</div>
+<!-- Input Group: Password -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="block font-label-caps text-label-caps text-text-muted uppercase" for="password">Password</label>
+<a class="font-label-caps text-label-caps text-primary hover:text-secondary transition-colors" href="#">Forgot Password?</a>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">lock</span>
+<input class="w-full bg-surface-raised border border-transparent rounded-lg py-3 pl-12 pr-12 text-text-primary placeholder-text-muted focus:outline-none input-glow transition-all duration-300" id="password" placeholder="••••••••" type="password" required/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors" type="button" onclick="togglePasswordVisibility()">
+<span class="material-symbols-outlined" id="passwordToggleIcon">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Primary CTA -->
+<button id="submitBtn" class="w-full btn-gold-gradient rounded-lg py-3 mt-4 font-headline-lg-mobile text-headline-lg-mobile flex items-center justify-center gap-2" type="submit">
+<span>Login</span>
+<span class="material-symbols-outlined text-[20px]">login</span>
+</button>
+</form>
+<!-- Divider -->
+<!-- <div class="flex items-center gap-4 my-8">
+<div class="h-px bg-white/10 flex-1"></div>
+<span class="font-label-caps text-label-caps text-text-muted uppercase">Or continue with</span>
+<div class="h-px bg-white/10 flex-1"></div>
+</div> -->
+<!-- Social Logins -->
+<!-- <div class="grid grid-cols-2 gap-4">
+<button class="bg-surface-raised border border-white/5 hover:bg-white/5 rounded-lg py-3 flex items-center justify-center gap-2 transition-colors duration-300">
+<img class="w-5 h-5" data-alt="The Google 'G' logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDNW7KvPL2NJS1h7pLmJywOzrA2JtCHwvODWkV1xn3o95_5aIJhTPafPtkwptJbtz1pQGAgIbRVC1K_QSfSOgt3mLyWx8bXnYSPsByRCW-cFNkqTny87kMVN3ZWIpnSu1muPc33FJ8R9rsKfJ732PvUi8EA94wIa__aX6z94XUI9PaciJ1Ek1LSNetsp1Wo2sAKcVv5ycgeDbZcI_jVUSPb2bviazk8nusdiCiWU4sQT8uB9_B73dD"/>
+<span class="font-label-caps text-label-caps text-text-primary">Google</span>
+</button>
+<button class="bg-surface-raised border border-white/5 hover:bg-white/5 rounded-lg py-3 flex items-center justify-center gap-2 transition-colors duration-300">
+<span class="material-symbols-outlined text-text-primary">file_download</span>
+<span class="font-label-caps text-label-caps text-text-primary">Apple</span>
+</button>
+</div>
+</div> -->
+<!-- Footer Link -->
+<div class="mt-8 text-center">
+<p class="text-text-muted font-body-md text-body-md">
+                Don't have an account? 
+                <a class="text-primary hover:text-secondary font-bold transition-colors" href="signup.html">Sign Up</a>
+</p>
+</div>
+</main>
+
+<script>
+  // Auto-redirect if already logged in
+  (function () {
+    try {
+      const hasCookie = document.cookie.split(';').some(c => c.trim().startsWith('token='));
+      const cached = localStorage.getItem('chat_identity');
+      
+      if (!hasCookie && cached) {
+        // Stale frontend session - cookie is missing
+        localStorage.removeItem('chat_identity');
+        return;
+      }
+      
+      if (hasCookie && !cached) {
+        // Missing frontend session - clear cookie to prevent loop
+        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        return;
+      }
+
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.token && parsed.user) {
+          if (parsed.user.role === 'user') {
+            window.location.href = 'home.html';
+          } else {
+            window.location.href = '../chat.html';
+          }
+        }
+      }
+    } catch (_) { 
+      localStorage.removeItem('chat_identity'); 
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    }
+  })();
+
+  function togglePasswordVisibility() {
+    const pwdInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('passwordToggleIcon');
+    if (pwdInput.type === 'password') {
+      pwdInput.type = 'text';
+      toggleIcon.textContent = 'visibility';
+    } else {
+      pwdInput.type = 'password';
+      toggleIcon.textContent = 'visibility_off';
+    }
+  }
+
+  function showError(msg) {
+    const errEl = document.getElementById('errorMsg');
+    errEl.textContent = msg;
+    errEl.classList.remove('hidden');
+  }
+
+  function hideError() {
+    const errEl = document.getElementById('errorMsg');
+    errEl.classList.add('hidden');
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    hideError();
+
+    const userId = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!userId) return showError('Please enter your Account ID.');
+    if (!password) return showError('Please enter your password.');
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    const btnSpan = btn.querySelector('span:first-child');
+    const originalText = btnSpan.textContent;
+    btnSpan.textContent = 'Authenticating...';
+
+    try {
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || 'Authentication failed. Please verify your Account ID.');
+        return;
+      }
+
+      const user = data.user;
+      if (user) {
+        user._id = user._id || user.userId;
+      }
+
+      // Save credentials
+      localStorage.setItem('chat_identity', JSON.stringify({
+        role: user.role,
+        token: data.token,
+        user
+      }));
+
+      // Redirect to appropriate dashboard based on user role
+      if (user.role === 'agent') {
+        window.location.href = '../chat.html';
+      } else {
+        window.location.href = 'home.html';
+      }
+    } catch (err) {
+      showError('Connection error. Please check your network and try again.');
+      console.error(err);
+    } finally {
+      btn.disabled = false;
+      btnSpan.textContent = originalText;
+    }
+  }
+</script>
+</body></html>

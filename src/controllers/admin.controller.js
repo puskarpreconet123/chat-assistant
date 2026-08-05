@@ -24,6 +24,13 @@ export async function createAgent(req, res) {
       name: agent.name
     });
 
+    // Set token cookie
+    res.cookie('token', token, {
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      httpOnly: false,
+      path: '/'
+    });
+
     return res.status(201).json({ agent, token });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -55,6 +62,13 @@ export async function createUser(req, res) {
       role: 'user',
       agentId,
       name: user.name
+    });
+
+    // Set token cookie
+    res.cookie('token', token, {
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      httpOnly: false,
+      path: '/'
     });
 
     return res.status(201).json({ user, token });
