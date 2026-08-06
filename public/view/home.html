@@ -260,7 +260,7 @@
 <span class="bg-secondary-fixed-dim/20 text-secondary-fixed-dim text-[10px] font-bold px-2 py-1 rounded-md tracking-wider">ACTIVE</span>
 </div>
 <h4 class="font-label-caps text-text-muted mb-1">Active Subscription</h4>
-<div class="font-label-numeric text-[24px] text-white">1</div>
+<div id="active-subs-count" class="font-label-numeric text-[24px] text-white">0</div>
 </div>
 </div>
 <!-- Card 2 -->
@@ -272,7 +272,7 @@
 <span class="bg-surface-variant text-text-muted text-[10px] font-bold px-2 py-1 rounded-md tracking-wider">PENDING</span>
 </div>
 <h4 class="font-label-caps text-text-muted mb-1">Pending Subscription</h4>
-<div class="font-label-numeric text-[24px] text-white">None</div>
+<div id="pending-subs-count" class="font-label-numeric text-[24px] text-white">None</div>
 </div>
 </div>
 <!-- Card 3 -->
@@ -305,16 +305,30 @@
 <section>
 <div class="flex justify-between items-center mb-6">
 <h3 class="font-headline-lg text-headline-lg text-primary flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">casino</span> Featured Games
+<span class="material-symbols-outlined text-primary">casino</span> 
+<span class="lg:hidden">Games</span>
+<span class="hidden lg:inline">Featured Games</span>
                 </h3>
-<button class="font-label-caps text-label-caps text-secondary-fixed-dim hover:text-white transition-colors flex items-center gap-1">SEE ALL <span class="material-symbols-outlined text-[16px]">arrow_forward</span></button>
+<button id="see-all-btn" onclick="toggleShowAllGames()" class="font-label-caps text-label-caps text-secondary-fixed-dim hover:text-white transition-colors flex items-center gap-1">SEE ALL <span class="material-symbols-outlined text-[16px]">arrow_downward</span></button>
 </div>
-<div id="games-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-  <!-- Dynamic games will be loaded here -->
-  <div class="col-span-full text-center py-12 text-text-muted">
-    <span class="material-symbols-outlined animate-spin text-[32px] mb-2">autorenew</span>
-    <p>Loading premium games...</p>
+<div class="relative group/slider w-full">
+  <!-- Left Arrow -->
+  <button id="slider-arrow-left" onclick="scrollGamesSlider('left')" class="absolute left-[-20px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-surface-variant/90 border border-white/10 text-white flex items-center justify-center z-20 opacity-0 group-hover/slider:opacity-65 hover:!opacity-100 transition-opacity cursor-pointer shadow-lg hover:bg-surface-raised hidden lg:flex">
+    <span class="material-symbols-outlined">chevron_left</span>
+  </button>
+  
+  <div id="games-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Dynamic games will be loaded here -->
+    <div class="col-span-full text-center py-12 text-text-muted">
+      <span class="material-symbols-outlined animate-spin text-[32px] mb-2">autorenew</span>
+      <p>Loading premium games...</p>
+    </div>
   </div>
+
+  <!-- Right Arrow -->
+  <button id="slider-arrow-right" onclick="scrollGamesSlider('right')" class="absolute right-[-20px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-surface-variant/90 border border-white/10 text-white flex items-center justify-center z-20 opacity-0 group-hover/slider:opacity-65 hover:!opacity-100 transition-opacity cursor-pointer shadow-lg hover:bg-surface-raised hidden lg:flex">
+    <span class="material-symbols-outlined">chevron_right</span>
+  </button>
 </div>
 </section>
 <!-- Popular Categories Grid -->
@@ -442,13 +456,17 @@
       }
     }
 
+    let fetchedGames = [];
+    let showAllGames = false;
+
+
     const gradients = [
-      'from-purple-900/80 to-indigo-950/90',
-      'from-emerald-950/80 to-teal-900/90',
-      'from-rose-950/80 to-red-900/90',
-      'from-amber-950/80 to-yellow-900/90',
-      'from-cyan-950/80 to-blue-950/90',
-      'from-fuchsia-950/80 to-pink-900/90'
+      'from-purple-800/80 to-indigo-900/90',
+      'from-emerald-800/80 to-teal-900/90',
+      'from-rose-800/80 to-red-900/90',
+      'from-amber-800/80 to-yellow-900/90',
+      'from-cyan-800/80 to-blue-900/90',
+      'from-fuchsia-800/80 to-pink-900/90'
     ];
     
     function getGradient(id) {
@@ -489,7 +507,8 @@
           throw new Error(data.error || 'Unknown error');
         }
 
-        renderGames(data.games);
+        fetchedGames = data.games;
+        renderGames();
       } catch (err) {
         console.error('[LoadGames] Error:', err);
         grid.innerHTML = `
@@ -501,23 +520,56 @@
       }
     }
 
-    function renderGames(games) {
+    function renderGames() {
       const grid = document.getElementById('games-grid');
+      const seeAllBtn = document.getElementById('see-all-btn');
       if (!grid) return;
       
       grid.innerHTML = '';
+
+      // Update dashboard counts dynamically
+      const activeCount = fetchedGames.filter(g => g.subscriptionStatus === 'DONE').length;
+      const pendingCount = fetchedGames.filter(g => g.subscriptionStatus === 'PENDING').length;
       
-      if (games.length === 0) {
+      const activeCountEl = document.getElementById('active-subs-count');
+      if (activeCountEl) activeCountEl.textContent = activeCount;
+      
+      const pendingCountEl = document.getElementById('pending-subs-count');
+      if (pendingCountEl) pendingCountEl.textContent = pendingCount > 0 ? pendingCount : 'None';
+      
+      if (fetchedGames.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full text-center py-12 text-text-muted">
             <span class="material-symbols-outlined text-[48px] mb-2">sports_esports</span>
             <p>No games available at the moment.</p>
           </div>
         `;
+        if (seeAllBtn) seeAllBtn.style.display = 'none';
         return;
       }
       
-      games.forEach(game => {
+      // Hide the toggle button and navigation arrows if there are 4 or fewer games
+      if (seeAllBtn) {
+        if (fetchedGames.length <= 4) {
+          seeAllBtn.style.display = 'none';
+        } else {
+          seeAllBtn.style.display = 'flex';
+          if (showAllGames) {
+            seeAllBtn.innerHTML = `SHOW LESS <span class="material-symbols-outlined text-[16px]">arrow_upward</span>`;
+          } else {
+            seeAllBtn.innerHTML = `SEE ALL <span class="material-symbols-outlined text-[16px]">arrow_downward</span>`;
+          }
+        }
+      }
+
+      // Toggle container layout between horizontal slider and grid
+      if (showAllGames) {
+        grid.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full";
+      } else {
+        grid.className = "flex overflow-x-auto gap-6 pb-4 scroll-smooth snap-x snap-mandatory hide-scrollbar w-full";
+      }
+
+      fetchedGames.forEach(game => {
         const card = document.createElement('div');
         
         let actionButtons = '';
@@ -526,8 +578,8 @@
         if (game.subscriptionStatus === 'DONE') {
           borderStyle = 'border border-secondary-fixed-dim/20';
           actionButtons = `
-            <div class="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
-              <button onclick="visitGame('${game.detail}')" class="flex-1 bg-secondary-fixed-dim hover:bg-secondary-fixed text-surface-deep font-label-caps text-label-caps py-2 rounded-lg font-bold transition-colors">VISIT</button>
+            <div class="flex gap-3 w-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 lg:delay-100">
+              <button onclick="visitGame('${game.id}')" class="flex-1 bg-secondary-fixed-dim hover:bg-secondary-fixed text-surface-deep font-label-caps text-label-caps py-2 rounded-lg font-bold transition-colors">VISIT</button>
               <button onclick="window.toggleChatDrawer(true)" class="w-12 h-10 bg-surface/80 border border-white/20 hover:bg-surface-raised rounded-lg flex items-center justify-center text-white transition-colors">
                 <span class="material-symbols-outlined text-[20px]">chat</span>
               </button>
@@ -536,13 +588,13 @@
         } else if (game.subscriptionStatus === 'PENDING') {
           borderStyle = 'border border-primary/10';
           actionButtons = `
-            <div class="flex opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 w-full">
+            <div class="flex w-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 lg:delay-100">
               <button disabled class="flex-1 bg-surface-variant text-text-muted font-label-caps text-label-caps py-2 rounded-lg font-bold cursor-not-allowed">PENDING</button>
             </div>
           `;
         } else {
           actionButtons = `
-            <div class="flex opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 w-full">
+            <div class="flex w-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 lg:delay-100">
               <button onclick="confirmSubscribe('${game.id}', '${game.name.replace(/'/g, "\\'")}')" class="flex-1 bg-primary-container hover:bg-primary text-surface-deep font-label-caps text-label-caps py-2 rounded-lg font-bold transition-colors">SUBSCRIBE</button>
             </div>
           `;
@@ -551,22 +603,25 @@
         const gradClass = getGradient(game.id);
         const gameIcon = getIcon(game.name);
         
-        card.className = `h-[320px] rounded-xl relative overflow-hidden glass-panel group flex flex-col justify-end ${borderStyle}`;
+        // Define width depending on whether we are in horizontal slider or grid layout
+        const widthClass = showAllGames ? "w-full" : "w-[280px] md:w-[320px] flex-shrink-0 snap-start";
+        
+        card.className = `h-[320px] rounded-xl relative overflow-hidden glass-panel group flex flex-col justify-end ${borderStyle} ${widthClass}`;
         card.innerHTML = `
           <!-- Image Container -->
           <img alt="${game.name}" 
-               class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-all duration-500 group-hover:scale-105" 
-               src="/uploads/${game.image}" 
+               class="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:opacity-90 transition-all duration-500 group-hover:scale-105" 
+               src="https://telewiz.in/officemanage/uploads/photos/${game.image}" 
                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')">
                
           <!-- Fallback Gradient Card -->
           <div class="absolute inset-0 bg-gradient-to-br ${gradClass} flex flex-col items-center justify-center hidden">
-            <span class="material-symbols-outlined text-[64px] text-white/20 group-hover:scale-110 transition-transform duration-500">${gameIcon}</span>
+            <span class="material-symbols-outlined text-[64px] text-white/35 group-hover:scale-110 transition-transform duration-500">${gameIcon}</span>
           </div>
           
-          <div class="absolute inset-0 bg-gradient-to-t from-surface-deep via-surface-deep/60 to-transparent"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-surface-deep via-surface-deep/45 to-transparent"></div>
           
-          <div class="relative z-10 p-5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+          <div class="relative z-10 p-5 transform translate-y-0 lg:translate-y-4 lg:group-hover:translate-y-0 transition-all duration-300 w-full">
             <div class="flex items-center justify-between mb-3">
               <div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-white">${game.name}</div>
               ${game.subscriptionStatus === 'DONE' ? '<span class="bg-secondary-fixed-dim/20 text-secondary-fixed-dim text-[9px] font-bold px-1.5 py-0.5 rounded-md tracking-wider">SUBSCRIBED</span>' : ''}
@@ -578,9 +633,71 @@
         
         grid.appendChild(card);
       });
+
+      // Initialize navigation arrows visibility after elements are appended to DOM (giving browser time to calculate layout)
+      setTimeout(updateSliderArrows, 100);
     }
 
-    function visitGame(url) {
+    function toggleShowAllGames() {
+      showAllGames = !showAllGames;
+      renderGames();
+    }
+
+    function updateSliderArrows() {
+      const grid = document.getElementById('games-grid');
+      const leftArrow = document.getElementById('slider-arrow-left');
+      const rightArrow = document.getElementById('slider-arrow-right');
+      if (!grid) return;
+      
+      // If we are in grid mode, or have 4 or fewer games, hide both arrows
+      if (showAllGames || fetchedGames.length <= 4) {
+        if (leftArrow) leftArrow.style.setProperty('display', 'none', 'important');
+        if (rightArrow) rightArrow.style.setProperty('display', 'none', 'important');
+        return;
+      }
+      
+      const scrollLeft = grid.scrollLeft;
+      const scrollWidth = grid.scrollWidth;
+      const clientWidth = grid.clientWidth;
+      
+      // Hide left arrow if scrolled to start (allow 5px buffer)
+      if (leftArrow) {
+        if (scrollLeft <= 5) {
+          leftArrow.style.setProperty('display', 'none', 'important');
+        } else {
+          leftArrow.style.removeProperty('display');
+        }
+      }
+      
+      // Hide right arrow if scrolled to end (allow 5px buffer)
+      if (rightArrow) {
+        if (scrollLeft + clientWidth >= scrollWidth - 5) {
+          rightArrow.style.setProperty('display', 'none', 'important');
+        } else {
+          rightArrow.style.removeProperty('display');
+        }
+      }
+    }
+
+    function scrollGamesSlider(direction) {
+      const grid = document.getElementById('games-grid');
+      if (!grid) return;
+      
+      const scrollAmount = 344; // w-[320px] + gap-6 (24px)
+      if (direction === 'left') {
+        grid.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      } else {
+        grid.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
+    }
+
+    function visitGame(gameId) {
+      const game = fetchedGames.find(g => String(g.id) === String(gameId));
+      if (!game || !game.detail) {
+        alert('Game link is currently not available.');
+        return;
+      }
+      const url = game.detail.trim();
       if (!url || url === '#' || !url.startsWith('http')) {
         alert('Game link is currently not available.');
         return;
@@ -657,6 +774,12 @@
     // Load games on page load
     document.addEventListener('DOMContentLoaded', () => {
       loadGames();
+      
+      const grid = document.getElementById('games-grid');
+      if (grid) {
+        grid.addEventListener('scroll', updateSliderArrows);
+      }
+      window.addEventListener('resize', updateSliderArrows);
     });
 </script>
 <script src="/socket.io/socket.io.js"></script>

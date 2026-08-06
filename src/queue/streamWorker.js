@@ -105,6 +105,15 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
     // 3. Emit message:new event to recipient's room
     emitter.to(`user:${recipientId}`).emit('message:new', messageObj);
 
+    // If the conversation's agentId is different from recipientId and senderId (e.g. admin sent it),
+    // also notify the assigned agent.
+    if (agentId && agentId !== recipientId && agentId !== senderId) {
+      emitter.to(`user:${agentId}`).emit('message:new', messageObj);
+    }
+
+    // Also notify any connected admins in real-time
+    emitter.to('admins').emit('message:new', messageObj);
+
     // 4. Emit message:sent confirmation back to sender's room
     emitter.to(`user:${senderId}`).emit('message:sent', {
       _id,

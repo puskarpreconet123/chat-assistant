@@ -102,13 +102,13 @@ router.put('/image/upload-mock', express.raw({ type: '*/*', limit: '10mb' }), as
   }
 });
 
-// Admin routes (Public for local convenience)
-router.post('/admin/agents', adminController.createAgent);
-router.post('/admin/users', adminController.createUser);
-router.post('/admin/users/assign', adminController.assignUsers);
-router.get('/admin/agents', adminController.listAgents);
-router.get('/admin/users', adminController.listUsers);
-router.delete('/admin/users', adminController.deleteUsers);
+// Admin routes (Protected with requireAuth)
+router.post('/admin/agents', requireAuth, adminController.createAgent);
+router.post('/admin/users', requireAuth, adminController.createUser);
+router.post('/admin/users/assign', requireAuth, adminController.assignUsers);
+router.get('/admin/agents', requireAuth, adminController.listAgents);
+router.get('/admin/users', requireAuth, adminController.listUsers);
+router.delete('/admin/users', requireAuth, adminController.deleteUsers);
 
 // Protected routes
 router.use(requireAuth);

@@ -9,6 +9,8 @@ import { checkRateLimit } from '../services/rateLimiter.service.js';
 import { enqueueMessage } from '../queue/streamProducer.js';
 import { Message } from '../models/Message.js';
 import { Conversation } from '../models/Conversation.js';
+import { User } from '../models/User.js';
+import { pool } from '../config/mysql.js';
 
 export function setupSocketGateway(httpServer) {
   const io = new Server(httpServer, {
@@ -35,8 +37,52 @@ export function setupSocketGateway(httpServer) {
     // Join Socket.io room for targeted fan-out across server instances
     socket.join(userRoom);
 
+    const isAdminUser = role === 'agent' && String(emailId).toUpperCase().includes('ADMIN');
+    if (isAdminUser) {
+      socket.join('admins');
+      console.log(`[Gateway:${gatewayId}] Admin connected and joined admins room: ${emailId}`);
+    }
+
     // Register presence in Redis (TTL 60s)
     await setPresence(emailId, gatewayId, 60);
+
+    // Auto-deliver all pending messages sent to this user while they were offline
+    try {
+      const undeliveredMessages = await Message.find({
+        recipientId: emailId,
+        status: 'sent'
+      });
+
+      if (undeliveredMessages.length > 0) {
+        const messageIds = undeliveredMessages.map(m => m._id);
+        
+        await Message.updateMany(
+          { _id: { $in: messageIds } },
+          { $set: { status: 'delivered' } }
+        );
+
+        // Group by sender to notify them
+        const senderGroups = {};
+        for (const msg of undeliveredMessages) {
+          if (!senderGroups[msg.senderId]) {
+            senderGroups[msg.senderId] = [];
+          }
+          senderGroups[msg.senderId].push(msg._id);
+        }
+
+        // Notify each sender that their messages have been delivered
+        for (const [senderId, msgIds] of Object.entries(senderGroups)) {
+          for (const mId of msgIds) {
+            io.to(`user:${senderId}`).emit('message:delivered', {
+              messageId: mId,
+              deliveredAt: new Date()
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`[Gateway] Offline message delivery failure for ${emailId}:`, err);
+    }
 
     // Periodic Heartbeat to renew presence TTL
     const heartbeatInterval = setInterval(async () => {
@@ -68,6 +114,12 @@ export function setupSocketGateway(httpServer) {
           return socket.emit('error', errPayload);
         }
 
+        if (!['text', 'voice', 'image'].includes(type)) {
+          const errPayload = { error: 'Invalid message type' };
+          if (typeof ackCallback === 'function') ackCallback(errPayload);
+          return socket.emit('error', errPayload);
+        }
+
         if (type === 'text' && (!text || !text.trim())) {
           const errPayload = { error: 'Text message cannot be empty' };
           if (typeof ackCallback === 'function') ackCallback(errPayload);
@@ -90,9 +142,68 @@ export function setupSocketGateway(httpServer) {
         const createdAt = new Date();
 
         // Determine agentId & emailId for Conversation mapping
-        const currentAgentId = role === 'agent' ? emailId : agentId || recipientId;
-        const currentEmailId = role === 'user' ? emailId : recipientId;
-        const recipientType = role === 'agent' ? 'user' : 'agent';
+        let currentAgentId = role === 'agent' ? emailId : agentId || recipientId;
+        let currentEmailId = role === 'user' ? emailId : recipientId;
+
+        // Try to fetch existing conversation to lock roles
+        const existingConv = await Conversation.findById(conversationId);
+        if (existingConv) {
+          currentAgentId = existingConv.agentId;
+          currentEmailId = existingConv.emailId;
+
+          // Enforce active participant authorization check
+          if (emailId !== existingConv.agentId && emailId !== existingConv.emailId) {
+            const errPayload = { error: 'Unauthorized: You are not a participant in this conversation.' };
+            if (typeof ackCallback === 'function') ackCallback(errPayload);
+            return socket.emit('error', errPayload);
+          }
+        } else {
+          // If starting a new virtual conversation, validate authorization
+          if (role === 'user') {
+            // Normal players can only start a chat with their assigned agent
+            if (recipientId !== agentId) {
+              const errPayload = { error: 'Unauthorized: Users can only message their assigned agent.' };
+              if (typeof ackCallback === 'function') ackCallback(errPayload);
+              return socket.emit('error', errPayload);
+            }
+          } else if (role === 'agent') {
+            // Normal agents (non-admin) can only start a chat with users assigned to them
+            const isAdminSender = String(emailId).toUpperCase().includes('ADMIN');
+            if (!isAdminSender) {
+              const userObj = await User.findOne({ emailId: recipientId });
+              if (!userObj) {
+                const errPayload = { error: 'Recipient user not found.' };
+                if (typeof ackCallback === 'function') ackCallback(errPayload);
+                return socket.emit('error', errPayload);
+              }
+              const userAgentId = userObj.agentId?._id || userObj.agentId;
+              if (String(userAgentId) !== String(emailId)) {
+                const errPayload = { error: 'Unauthorized: Agents can only message users assigned to them.' };
+                if (typeof ackCallback === 'function') ackCallback(errPayload);
+                return socket.emit('error', errPayload);
+              }
+            }
+          }
+        }
+
+        // Dynamically determine recipientType based on whether the recipient is an agent
+        let recipientType = role === 'agent' ? 'user' : 'agent';
+        try {
+          const [rows] = await pool.query(
+            "SELECT type FROM users WHERE (email = ? OR agency_unq_id = ?)",
+            [recipientId, recipientId]
+          );
+          if (rows.length > 0) {
+            const type = rows[0].type;
+            if (type === 'AGENCY' || type === 'ADMIN') {
+              recipientType = 'agent';
+            } else {
+              recipientType = 'user';
+            }
+          }
+        } catch (dbErr) {
+          console.error(`[Gateway] Error querying recipient type in MySQL for ${recipientId}:`, dbErr.message);
+        }
 
         const messagePayload = {
           _id: messageId,

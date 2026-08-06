@@ -1,4 +1,5 @@
 import { Message } from '../models/Message.js';
+import { Conversation } from '../models/Conversation.js';
 import { config } from '../config/env.js';
 import { generatePresignedDownloadUrl as generateImageDownloadUrl } from '../services/image.service.js';
 
@@ -6,6 +7,20 @@ export async function getMessages(req, res) {
   try {
     const { conversationId } = req.params;
     const { cursor, limit = 20 } = req.query;
+
+    const isAgentUser = req.user.role === 'agent';
+    const isAdminUser = isAgentUser && String(req.user.emailId).toUpperCase().includes('ADMIN');
+
+    // Admin has access to all messages. Others must be a participant of the conversation.
+    if (!isAdminUser) {
+      const conv = await Conversation.findById(conversationId);
+      if (!conv) {
+        return res.status(404).json({ error: 'Conversation not found' });
+      }
+      if (conv.agentId !== req.user.emailId && conv.emailId !== req.user.emailId) {
+        return res.status(403).json({ error: 'Access denied: You are not a participant of this conversation' });
+      }
+    }
 
     const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
 

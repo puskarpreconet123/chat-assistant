@@ -157,7 +157,7 @@ export const Agent = {
   },
 
   find(query = {}) {
-    let sql = "SELECT * FROM users WHERE type IN ('AGENCY', 'ADMIN')";
+    let sql = "SELECT * FROM users WHERE type = 'AGENCY'";
     const params = [];
     if (query._id) {
       sql += ' AND (id = ? OR agency_unq_id = ? OR email = ?)';

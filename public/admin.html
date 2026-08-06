@@ -525,6 +525,9 @@
     </div>
 
     <div class="header-links">
+      <button id="btnBackToAdminDashboard" style="display: none; background: #22c55e; border: none; color: white; padding: 0.45rem 1.1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-right: 0.5rem;" onmouseover="this.style.background='#16a34a'" onmouseout="this.style.background='#22c55e'">
+        ↩️ Return to Admin
+      </button>
       <a href="/chat.html" class="btn-header" style="margin-right: 0.5rem;">💬 Chat Portal</a>
       <a href="/" class="btn-header" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15);">🏠 Casino Lobby</a>
     </div>
@@ -581,7 +584,7 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 45px; text-align: center;">
+              <th id="thCheckbox" style="width: 45px; text-align: center;">
                 <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" style="cursor: pointer; width: 16px; height: 16px;" />
               </th>
               <th>User ID</th>
@@ -728,8 +731,126 @@
       }
     }
 
+    let currentUser = null;
+    let isAgent = false;
+
+    function getDecodedToken() {
+      const name = 'token=';
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const ca = decodedCookie.split(';');
+      let jwtToken = '';
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+          jwtToken = c.substring(name.length, c.length);
+          break;
+        }
+      }
+      
+      if (!jwtToken) {
+        const cached = localStorage.getItem('chat_identity');
+        if (cached) {
+          jwtToken = JSON.parse(cached).token;
+        }
+      }
+
+      if (!jwtToken) return null;
+
+      try {
+        const base64Url = jwtToken.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        console.error('Error decoding token:', e);
+        return null;
+      }
+    }
+
+    function getToken() {
+      const name = 'token=';
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const ca = decodedCookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+          return c.substring(name.length, c.length);
+        }
+      }
+      
+      const cached = localStorage.getItem('chat_identity');
+      if (cached) {
+        return JSON.parse(cached).token;
+      }
+      return '';
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+      const token = getToken();
+      const headers = options.headers || {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      options.headers = headers;
+      return fetch(url, options);
+    }
+
     // On Load
     window.addEventListener('load', () => {
+      currentUser = getDecodedToken();
+      isAgent = currentUser && currentUser.role === 'agent' && String(currentUser.emailId).toUpperCase().startsWith('AGENCY-');
+
+      // Check if we have a preserved admin session to restore
+      const hasAgentIdentity = !!localStorage.getItem('agent_identity');
+      if (hasAgentIdentity) {
+        const btnBackToAdmin = document.getElementById('btnBackToAdminDashboard');
+        if (btnBackToAdmin) {
+          btnBackToAdmin.style.display = 'inline-block';
+          btnBackToAdmin.addEventListener('click', (e) => {
+            e.preventDefault();
+            const agentIdentity = localStorage.getItem('agent_identity');
+            if (agentIdentity) {
+              const parsed = JSON.parse(agentIdentity);
+              localStorage.setItem('chat_identity', agentIdentity);
+              document.cookie = `token=${parsed.token}; path=/; max-age=${7 * 24 * 60 * 60};`;
+              localStorage.removeItem('agent_identity');
+              window.location.reload();
+            }
+          });
+        }
+      }
+
+      // Hide Register New tab for everyone (both Admin & Agents)
+      const tabBtnRegister = document.getElementById('tabBtnRegister');
+      const mobTabBtnRegister = document.getElementById('mobTabBtnRegister');
+      if (tabBtnRegister) tabBtnRegister.style.display = 'none';
+      if (mobTabBtnRegister) mobTabBtnRegister.style.display = 'none';
+
+      if (isAgent) {
+        // Hide Manage Agents tab for Agents
+        const tabBtnAgents = document.getElementById('tabBtnAgents');
+        const mobTabBtnAgents = document.getElementById('mobTabBtnAgents');
+        if (tabBtnAgents) tabBtnAgents.style.display = 'none';
+        if (mobTabBtnAgents) mobTabBtnAgents.style.display = 'none';
+
+        // Hide bulk actions bar
+        const bulkBar = document.querySelector('.bulk-bar');
+        if (bulkBar) bulkBar.style.display = 'none';
+
+        // Hide checkbox header
+        const thCheckbox = document.getElementById('thCheckbox');
+        if (thCheckbox) thCheckbox.style.display = 'none';
+      }
+
       refreshData();
       // Position tab slider
       const usersBtn = document.getElementById('tabBtnUsers');
@@ -741,7 +862,11 @@
     });
 
     async function refreshData() {
-      await Promise.all([loadAgents(), loadUsers()]);
+      if (isAgent) {
+        await loadUsers();
+      } else {
+        await Promise.all([loadAgents(), loadUsers()]);
+      }
     }
 
     // Switch Tabs inside Admin Panel
@@ -799,7 +924,7 @@
 
     async function loadAgents() {
       try {
-        const res = await fetch('/api/v1/admin/agents');
+        const res = await fetchWithAuth('/api/v1/admin/agents');
         const data = await res.json();
         
         agentTableBody.innerHTML = '';
@@ -858,23 +983,39 @@
 
     async function loadUsers() {
       try {
-        const res = await fetch('/api/v1/admin/users');
+        const res = await fetchWithAuth('/api/v1/admin/users');
         const data = await res.json();
 
         userTableBody.innerHTML = '';
         selectAllCheckbox.checked = false;
 
-        if (data.users && data.users.length > 0) {
-          userCountText.textContent = `${data.users.length} user(s) registered`;
-          data.users.forEach(user => {
+        let usersToRender = data.users || [];
+        if (isAgent) {
+          usersToRender = usersToRender.filter(u => {
+            const aId = u.agentId?._id || u.agentId;
+            return String(aId) === String(currentUser.emailId);
+          });
+        }
+
+        if (usersToRender.length > 0) {
+          userCountText.textContent = `${usersToRender.length} user(s) assigned`;
+          usersToRender.forEach(user => {
             const agentName = user.agentId?.name || user.agentId || 'Unassigned';
             const agentId = user.agentId?._id || user.agentId || '';
             
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
+            const checkboxTd = isAgent ? '' : `
               <td style="text-align: center;">
                 <input type="checkbox" class="user-checkbox" value="${user._id}" style="cursor: pointer; width: 16px; height: 16px;" />
               </td>
+            `;
+            
+            const deleteBtn = isAgent ? '' : `
+              <button class="btn-action btn-action-danger" onclick="deleteSingleUser('${user._id}', '${user.name}')" title="Delete User">🗑️</button>
+            `;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              ${checkboxTd}
               <td style="font-family: monospace;">${user._id}</td>
               <td style="font-weight: 500;">${user.name}</td>
               <td>
@@ -886,18 +1027,18 @@
                 <div class="action-group">
                   <button class="btn-action" onclick="openChat('${user._id}', 'user', '${user.name}', false)">Connect Here 👤</button>
                   <button class="btn-action" style="background:#fff;" onclick="openChat('${user._id}', 'user', '${user.name}', true)">New Tab ↗</button>
-                  <button class="btn-action btn-action-danger" onclick="deleteSingleUser('${user._id}', '${user.name}')" title="Delete User">🗑️</button>
+                  ${deleteBtn}
                 </div>
               </td>
             `;
             userTableBody.appendChild(tr);
           });
         } else {
-          userCountText.textContent = 'No users registered';
+          userCountText.textContent = 'No users assigned';
           userTableBody.innerHTML = `
             <tr>
-              <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
-                No users registered in database.
+              <td colspan="${isAgent ? '5' : '6'}" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
+                No users assigned to you.
               </td>
             </tr>
           `;
@@ -906,7 +1047,7 @@
         console.error('Error loading users:', err);
         userTableBody.innerHTML = `
           <tr>
-            <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--danger);">
+            <td colspan="${isAgent ? '5' : '6'}" style="padding: 2.5rem; text-align: center; color: var(--danger);">
               Failed to load users directory.
             </td>
           </tr>
@@ -937,7 +1078,7 @@
       const userIds = Array.from(selectedBoxes).map(cb => cb.value);
 
       try {
-        const res = await fetch('/api/v1/admin/users/assign', {
+        const res = await fetchWithAuth('/api/v1/admin/users/assign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ emailIds: userIds, agentId })
@@ -969,7 +1110,7 @@
       const userIds = Array.from(selectedBoxes).map(cb => cb.value);
 
       try {
-        const res = await fetch('/api/v1/admin/users', {
+        const res = await fetchWithAuth('/api/v1/admin/users', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ emailIds: userIds })
@@ -994,7 +1135,7 @@
       }
 
       try {
-        const res = await fetch('/api/v1/admin/users', {
+        const res = await fetchWithAuth('/api/v1/admin/users', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ emailIds: [emailId] })
@@ -1021,7 +1162,7 @@
       const name = agentNameInput.value.trim();
 
       try {
-        const res = await fetch('/api/v1/admin/agents', {
+        const res = await fetchWithAuth('/api/v1/admin/agents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, name, emailId, password })
@@ -1054,7 +1195,7 @@
       const agentId = userAgentSelect.value;
 
       try {
-        const res = await fetch('/api/v1/admin/users', {
+        const res = await fetchWithAuth('/api/v1/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, emailId: id, name, mob, agentId, password })
@@ -1080,7 +1221,20 @@
     // Open Chat Portal helper
     async function openChat(emailId, role, name, openNewWindow = false) {
       try {
-        const res = await fetch('/api/v1/auth/login', {
+        // Save current agent identity before switching session
+        const currentIdentity = localStorage.getItem('chat_identity');
+        if (currentIdentity) {
+          try {
+            const parsed = JSON.parse(currentIdentity);
+            if (parsed && parsed.role === 'agent') {
+              localStorage.setItem('agent_identity', currentIdentity);
+            }
+          } catch (e) {
+            console.error('Failed to save agent identity:', e);
+          }
+        }
+
+        const res = await fetchWithAuth('/api/v1/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ emailId, role, name })

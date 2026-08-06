@@ -706,7 +706,24 @@
       const data = await res.json();
       let list = data.conversations || [];
 
-
+      // Seed a virtual conversation if the user has an assigned agent and no existing conversation with them
+      if (currentUser && currentUser.role === 'user' && currentUser.agentId) {
+        const assignedAgentId = currentUser.agentId;
+        const hasConvoWithAgent = list.some(c => {
+          const partner = c.agentId;
+          const partnerId = partner?._id || partner;
+          return partnerId === assignedAgentId;
+        });
+        if (!hasConvoWithAgent) {
+          list.push({
+            _id: `conv-virtual-${assignedAgentId}-${currentUser._id}`,
+            agentId: assignedAgentId,
+            emailId: currentUser._id,
+            isVirtual: true,
+            lastMessageAt: new Date(0).toISOString()
+          });
+        }
+      }
 
       list.sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
 
@@ -716,7 +733,12 @@
       if (list.length > 0) {
         list.forEach(conv => {
           const partner = currentUser.role === 'agent' ? conv.emailId : conv.agentId;
-          const partnerName = partner?.name || partner || 'Partner';
+          let partnerName = partner?.name || partner || 'Partner';
+          if (typeof partnerName === 'string') {
+            if (partnerName.toUpperCase().startsWith('AGENCY-')) {
+              partnerName = 'Agency Support';
+            }
+          }
           const initials = getInitials(partnerName);
           const avatarColor = getAvatarColor(partnerName);
           
@@ -747,7 +769,12 @@
   function selectConversation(conv) {
     activeConversation = conv;
     const partner = currentUser.role === 'agent' ? conv.emailId : conv.agentId;
-    const partnerName = partner?.name || partner || 'Partner';
+    let partnerName = partner?.name || partner || 'Partner';
+    if (typeof partnerName === 'string') {
+      if (partnerName.toUpperCase().startsWith('AGENCY-')) {
+        partnerName = 'Agency Support';
+      }
+    }
     const partnerId = partner?._id || partner;
 
     document.getElementById('widgetConvoList').style.display = 'none';
@@ -999,8 +1026,16 @@
       if (!messageId || bubble.dataset.msgId === messageId) {
         const tick = bubble.querySelector('.tick-widget');
         if (tick) {
-          tick.textContent = '✓✓';
-          if (status === 'read') tick.classList.add('read');
+          if (status === 'read') {
+            tick.textContent = '✓✓';
+            tick.classList.add('read');
+          } else if (status === 'delivered') {
+            tick.textContent = '✓✓';
+            tick.classList.remove('read');
+          } else if (status === 'sent') {
+            tick.textContent = '✓';
+            tick.classList.remove('read');
+          }
         }
       }
     });

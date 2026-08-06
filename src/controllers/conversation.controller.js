@@ -3,9 +3,21 @@ import { pool } from '../config/mysql.js';
 
 export async function listConversations(req, res) {
   try {
-    const filter = req.user.role === 'agent' 
-      ? { agentId: req.user.emailId } 
-      : { emailId: req.user.emailId };
+    const isAgentUser = req.user.role === 'agent';
+
+    let filter = {};
+    if (isAgentUser) {
+      // Both Admin and Agents see conversations where they are either the agentId OR the emailId
+      filter = {
+        $or: [
+          { agentId: req.user.emailId },
+          { emailId: req.user.emailId }
+        ]
+      };
+    } else {
+      // Normal players only see their own conversations
+      filter = { emailId: req.user.emailId };
+    }
 
     const limit = parseInt(req.query.limit || '20', 10);
     // Fetch conversations from MongoDB

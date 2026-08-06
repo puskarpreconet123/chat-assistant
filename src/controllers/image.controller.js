@@ -1,4 +1,5 @@
 import { generatePresignedUploadUrl, generatePresignedDownloadUrl } from '../services/image.service.js';
+import { Conversation } from '../models/Conversation.js';
 
 export async function getImageUploadUrl(req, res) {
   try {
@@ -7,6 +8,19 @@ export async function getImageUploadUrl(req, res) {
 
     if (!conversationId) {
       return res.status(400).json({ error: 'conversationId is required' });
+    }
+
+    // Verify conversation participant authorization
+    const conversation = await Conversation.findById(conversationId);
+    if (conversation) {
+      if (senderId !== conversation.agentId && senderId !== conversation.emailId) {
+        return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
+      }
+    } else if (conversationId.startsWith('conv-')) {
+      const parts = conversationId.split('-');
+      if (!parts.includes(senderId)) {
+        return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
+      }
     }
 
     const presignedData = await generatePresignedUploadUrl({
@@ -26,6 +40,23 @@ export async function getImagePlayUrl(req, res) {
     const { key } = req.query;
     if (!key) {
       return res.status(400).json({ error: 'key query parameter is required' });
+    }
+
+    // Verify key participant authorization
+    const parts = key.split('/');
+    if (parts.length >= 2) {
+      const conversationId = parts[1];
+      const conversation = await Conversation.findById(conversationId);
+      if (conversation) {
+        if (req.user.emailId !== conversation.agentId && req.user.emailId !== conversation.emailId) {
+          return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
+        }
+      } else if (conversationId.startsWith('conv-')) {
+        const convParts = conversationId.split('-');
+        if (!convParts.includes(req.user.emailId)) {
+          return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
+        }
+      }
     }
 
     const data = await generatePresignedDownloadUrl({ fileKey: key });

@@ -611,6 +611,9 @@
       <span>Chat Assistant</span>
     </div>
     <div style="display: flex; align-items: center; gap: 1rem;">
+      <button id="btnBackToAdminChat" style="display: none; background: #22c55e; border: none; color: white; padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#16a34a'" onmouseout="this.style.background='#22c55e'">
+        ↩️ Return to Admin
+      </button>
       <a href="/admin.html" style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); color: white; text-decoration: none; padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='rgba(255, 255, 255, 0.25)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.15)'">⚙️ Admin Panel</a>
       <div id="connectionStatus" class="badge-status disconnected">
         <span class="dot"></span> Offline
@@ -710,6 +713,24 @@
       return colors[Math.abs(hash) % colors.length];
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function escapeHtmlAttr(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
     function getInitials(name) {
       if (!name) return '?';
       const parts = name.split(' ');
@@ -721,6 +742,31 @@
 
     // Auto-connect on load using cached identity from login page
     window.addEventListener('load', () => {
+      // Check if we have a preserved admin session to restore
+      const hasAgentIdentity = !!localStorage.getItem('agent_identity');
+      if (hasAgentIdentity) {
+        const btnBackToAdmin = document.getElementById('btnBackToAdminChat');
+        if (btnBackToAdmin) {
+          btnBackToAdmin.style.display = 'inline-block';
+          btnBackToAdmin.addEventListener('click', (e) => {
+            e.preventDefault();
+            const agentIdentity = localStorage.getItem('agent_identity');
+            if (agentIdentity) {
+              try {
+                const parsed = JSON.parse(agentIdentity);
+                localStorage.setItem('chat_identity', agentIdentity);
+                document.cookie = `token=${parsed.token}; path=/; max-age=${7 * 24 * 60 * 60};`;
+                localStorage.removeItem('agent_identity');
+                window.location.href = '/admin.html';
+              } catch (err) {
+                console.error('Failed to restore admin session:', err);
+                window.location.href = '/admin.html';
+              }
+            }
+          });
+        }
+      }
+
       const cached = localStorage.getItem('chat_identity');
       if (!cached) {
         window.location.href = '/login.html';
@@ -839,7 +885,11 @@
         
         globalConversations = data.conversations || [];
         
-        globalConversations.sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+        globalConversations.sort((a, b) => {
+          const tA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+          const tB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+          return tB - tA;
+        });
 
         conversationList.innerHTML = '';
         if (globalConversations.length > 0) {
@@ -866,11 +916,11 @@
               <div class="avatar" style="background-color: ${avatarColor};">${initials}</div>
               <div class="conv-details">
                 <div class="conv-header-row">
-                  <div class="conv-name">${partnerName}</div>
+                  <div class="conv-name">${escapeHtml(partnerName)}</div>
                   <div class="conv-time">${lastActiveTime}</div>
                 </div>
                 <div class="conv-sub-row">
-                  <div class="conv-last-msg ${conv.isVirtual ? 'virtual' : ''}">${lastMsgText}</div>
+                  <div class="conv-last-msg ${conv.isVirtual ? 'virtual' : ''}">${escapeHtml(lastMsgText)}</div>
                   ${unreadCount > 0 ? `<div class="unread-badge">${unreadCount}</div>` : ''}
                 </div>
               </div>
@@ -892,30 +942,81 @@
     async function loadAllUsers() {
       if (!currentToken) return;
       try {
-        const res = await fetch('/api/v1/admin/users', {
-          headers: { Authorization: `Bearer ${currentToken}` }
-        });
-        const data = await res.json();
-        allUsers = data.users || [];
-        renderAllUsers();
+        const isAdmin = currentUser.role === 'agent' && String(currentUser._id || currentUser.emailId).toUpperCase().includes('ADMIN');
+
+        const [usersRes, agentsRes] = await Promise.all([
+          fetch('/api/v1/admin/users', { headers: { Authorization: `Bearer ${currentToken}` } }),
+          isAdmin
+            ? fetch('/api/v1/admin/agents', { headers: { Authorization: `Bearer ${currentToken}` } })
+            : Promise.resolve({ json: () => ({ agents: [] }) })
+        ]);
+
+        const usersData = await usersRes.json();
+        const agentsData = await agentsRes.json();
+
+        allUsers = usersData.users || [];
+        const allAgents = agentsData.agents || [];
+
+        renderAllUsersAndAgents(allAgents);
       } catch (err) {
         addLog('Load All Users Error', err.message);
       }
     }
 
-    function renderAllUsers() {
+    function renderAllUsersAndAgents(allAgents = []) {
       const allUsersList = document.getElementById('allUsersList');
       if (!allUsersList) return;
       allUsersList.innerHTML = '';
 
       let renderedCount = 0;
+      const isAdmin = currentUser.role === 'agent' && String(currentUser._id || currentUser.emailId).toUpperCase().includes('ADMIN');
+
+      // 1. Render Agents (if admin)
+      if (isAdmin && allAgents.length > 0) {
+        allAgents.forEach(agent => {
+          if (agent._id === currentUser._id) return;
+          renderedCount++;
+
+          const initials = getInitials(agent.name);
+          const avatarColor = getAvatarColor(agent.name);
+
+          const item = document.createElement('div');
+          item.className = 'conv-item';
+          item.dataset.emailId = agent._id;
+
+          item.innerHTML = `
+            <div class="avatar" style="background-color: ${avatarColor};">${initials}</div>
+            <div class="conv-details">
+              <div class="conv-header-row">
+                <div class="conv-name">${escapeHtml(agent.name)} <span style="font-size: 0.7rem; color: var(--primary); font-weight: bold; background: var(--primary-light); padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.4rem;">AGENT</span></div>
+              </div>
+              <div class="conv-sub-row">
+                <div class="conv-last-msg">Click to start chat</div>
+              </div>
+            </div>
+          `;
+
+          const agentUserObj = {
+            _id: agent._id,
+            name: agent.name,
+            role: 'agent'
+          };
+
+          item.addEventListener('click', () => startOrSelectConversationWithUser(agentUserObj));
+          allUsersList.appendChild(item);
+        });
+      }
+
+      // 2. Render Users
       if (allUsers.length > 0) {
         allUsers.forEach(user => {
           if (user._id === currentUser._id) return;
 
-          // Only show users that belong to this agent
-          const userAgentId = user.agentId?._id || user.agentId;
-          if (userAgentId !== currentUser._id) return;
+          if (!isAdmin) {
+            // Only show users that belong to this agent
+            const userAgentId = user.agentId?._id || user.agentId;
+            if (userAgentId !== currentUser._id) return;
+          }
 
           renderedCount++;
 
@@ -930,7 +1031,7 @@
             <div class="avatar" style="background-color: ${avatarColor};">${initials}</div>
             <div class="conv-details">
               <div class="conv-header-row">
-                <div class="conv-name">${user.name}</div>
+                <div class="conv-name">${escapeHtml(user.name)} ${isAdmin ? `<span style="font-size: 0.7rem; color: #475569; font-weight: bold; background: #e2e8f0; padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.4rem;">USER</span>` : ''}</div>
               </div>
               <div class="conv-sub-row">
                 <div class="conv-last-msg">Click to start chat</div>
@@ -944,15 +1045,20 @@
       }
 
       if (renderedCount === 0) {
-        allUsersList.innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-secondary); font-size:0.8rem;">No users assigned to you.</div>';
+        allUsersList.innerHTML = `<div style="padding:2rem; text-align:center; color:var(--text-secondary); font-size:0.8rem;">${isAdmin ? 'No users or agents found.' : 'No users assigned to you.'}</div>`;
       }
     }
 
     function startOrSelectConversationWithUser(user) {
       const existing = globalConversations.find(c => {
-        const partner = currentUser.role === 'agent' ? c.emailId : c.agentId;
-        const partnerId = partner?._id || partner;
-        return partnerId === user._id;
+        const cAgentId = c.agentId?._id || c.agentId;
+        const cEmailId = c.emailId?._id || c.emailId;
+        
+        if (currentUser.role === 'agent') {
+          return cAgentId === currentUser._id && cEmailId === user._id;
+        } else {
+          return cEmailId === currentUser._id && cAgentId === user._id;
+        }
       });
 
       if (existing) {
@@ -976,6 +1082,10 @@
         container.classList.remove('active-chat-mode');
       }
       activeConversation = null;
+      if (presenceInterval) {
+        clearInterval(presenceInterval);
+        presenceInterval = null;
+      }
       document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
     }
 
@@ -995,7 +1105,7 @@
       headerAvatar.textContent = getInitials(partnerName);
       headerAvatar.style.backgroundColor = getAvatarColor(partnerName);
       activeConvTitle.textContent = partnerName;
-      activeConvSub.innerHTML = `<span>ID: ${partnerId}</span> • <span id="presenceIndicator" class="presence-offline">checking...</span>`;
+      activeConvSub.innerHTML = `<span>ID: ${escapeHtml(partnerId)}</span> • <span id="presenceIndicator" class="presence-offline">checking...</span>`;
       paginationCursor = null;
 
       document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
@@ -1107,8 +1217,12 @@
       }
 
       return `
-        <div class="voice-player-container" id="player-${msg._id}" data-duration="${duration}">
-          <button class="voice-play-btn" onclick="playVoiceNote(this, '${msg.audio?.key}', '${msg._id}', ${duration})">
+        <div class="voice-player-container" id="player-${escapeHtmlAttr(msgId)}" data-duration="${duration}">
+          <button class="voice-play-btn" 
+                  data-key="${escapeHtmlAttr(msg.audio?.key)}" 
+                  data-msg-id="${escapeHtmlAttr(msgId)}" 
+                  data-duration="${duration}" 
+                  onclick="playVoiceNoteFromBtn(this)">
             <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
           </button>
           <div class="voice-waveform-wrapper">
@@ -1119,6 +1233,13 @@
           </div>
         </div>
       `;
+    }
+
+    function playVoiceNoteFromBtn(btn) {
+      const key = btn.dataset.key;
+      const msgId = btn.dataset.msgId;
+      const duration = parseFloat(btn.dataset.duration) || 0;
+      playVoiceNote(btn, key, msgId, duration);
     }
 
     function formatMessageText(text) {
@@ -1158,7 +1279,8 @@
       if (msg.type === 'voice') {
         contentHtml = createVoicePlayerHtml(msg);
       } else if (msg.type === 'image') {
-        contentHtml = `<img src="${msg.image?.cdnUrl || msg.image?.key}" alt="Image" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 4px; display: block; cursor: pointer;" onclick="window.open(this.src, '_blank')" />`;
+        const imageUrl = escapeHtmlAttr(msg.image?.cdnUrl || msg.image?.key);
+        contentHtml = `<img src="${imageUrl}" alt="Image" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 4px; display: block; cursor: pointer;" onclick="window.open(this.src, '_blank')" />`;
       } else {
         contentHtml = `<div class="msg-text">${formatMessageText(msg.text)}</div>`;
       }
@@ -1178,6 +1300,16 @@
       } else {
         messagesContainer.appendChild(bubble);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      if (msg.type === 'image') {
+        const img = bubble.querySelector('img');
+        const src = msg.image?.cdnUrl || '';
+        if (img && src.startsWith('blob:')) {
+          img.onload = () => {
+            URL.revokeObjectURL(src);
+          };
+        }
       }
     }
 
@@ -1244,6 +1376,8 @@
         audio.play().catch(err => {
           console.error('Audio playback error:', err);
           btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>`;
+          currentAudio = null;
+          currentAudioBtn = null;
           alert('Could not play audio: ' + err.message);
         });
 

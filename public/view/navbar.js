@@ -10,6 +10,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } catch (_) {}
 
+    const hasAgentIdentity = !!localStorage.getItem('agent_identity');
+    const backToAdminBtnHtml = hasAgentIdentity ? `
+      <button id="btn-back-to-admin" class="hidden md:flex items-center gap-2 bg-secondary-fixed-dim/20 hover:bg-secondary-fixed-dim/30 text-secondary-fixed-dim px-4 py-1.5 rounded-full border border-secondary-fixed-dim/30 transition-all font-semibold text-xs cursor-pointer">
+        <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+        BACK TO ADMIN
+      </button>
+    ` : '';
+
+    const mobileBackToAdminBtnHtml = hasAgentIdentity ? `
+      <button id="mobile-btn-back-to-admin" class="flex items-center gap-3 p-3 rounded-lg text-secondary-fixed-dim bg-secondary-fixed-dim/10 hover:bg-secondary-fixed-dim/20 transition-colors text-left w-full cursor-pointer">
+        <span class="material-symbols-outlined">admin_panel_settings</span>
+        <span class="font-label-caps text-label-caps font-semibold">BACK TO ADMIN</span>
+      </button>
+    ` : '';
+
     const navbarHTML = `
     <header class="fixed top-0 w-full h-[70px] z-50 bg-surface/80 backdrop-blur-xl shadow-sm border-b border-white/5">
     <div class="flex justify-between items-center px-6 h-full max-w-[1440px] mx-auto relative">
@@ -31,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </a>
     </nav>
     <div class="flex items-center gap-4">
+    ${backToAdminBtnHtml}
     <div class="relative">
       <!-- Desktop Profile Trigger -->
       <div id="profile-trigger-desktop" class="hidden md:flex items-center gap-3 bg-surface-container px-4 py-1.5 rounded-full border border-white/10 cursor-pointer hover:border-primary/30 transition-all select-none">
@@ -91,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
 
       <nav class="flex flex-col gap-4">
+        ${mobileBackToAdminBtnHtml}
         <a id="mobile-nav-home" href="home.html" class="flex items-center gap-3 p-3 rounded-lg text-text-muted hover:text-primary hover:bg-white/5 transition-colors">
           <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
           <span class="font-label-caps text-label-caps font-semibold">HOME</span>
@@ -269,5 +286,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 icon.style.fontVariationSettings = '"FILL" 1';
             }
         }
+    }
+
+    const btnBackToAdmin = document.getElementById('btn-back-to-admin');
+    const mobBtnBackToAdmin = document.getElementById('mobile-btn-back-to-admin');
+
+    const handleBackToAdmin = (e) => {
+        e.preventDefault();
+        const agentIdentity = localStorage.getItem('agent_identity');
+        if (agentIdentity) {
+            try {
+                const parsed = JSON.parse(agentIdentity);
+                localStorage.setItem('chat_identity', agentIdentity);
+                document.cookie = `token=${parsed.token}; path=/; max-age=${7 * 24 * 60 * 60};`;
+                localStorage.removeItem('agent_identity');
+                window.location.href = '/admin.html';
+            } catch (err) {
+                console.error('Failed to restore agent identity:', err);
+                window.location.href = '/admin.html';
+            }
+        } else {
+            window.location.href = '/admin.html';
+        }
+    };
+
+    if (btnBackToAdmin) {
+        btnBackToAdmin.addEventListener('click', handleBackToAdmin);
+    }
+    if (mobBtnBackToAdmin) {
+        mobBtnBackToAdmin.addEventListener('click', handleBackToAdmin);
     }
 });
