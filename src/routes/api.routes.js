@@ -10,6 +10,8 @@ import * as conversationController from '../controllers/conversation.controller.
 import * as messageController from '../controllers/message.controller.js';
 import * as voiceController from '../controllers/voice.controller.js';
 import * as imageController from '../controllers/image.controller.js';
+import * as gamesController from '../controllers/games.controller.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -122,4 +124,9 @@ router.get('/voice/play-url', voiceController.getVoicePlayUrl);
 // Image routes
 router.post('/image/presigned-url', imageController.getImageUploadUrl);
 router.get('/image/play-url', imageController.getImagePlayUrl);
+
+// Game and Subscription routes
+router.get('/games', gamesController.getGames);
+router.post('/games/subscribe', gamesController.subscribeGame);
+
 

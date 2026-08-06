@@ -706,48 +706,7 @@
       const data = await res.json();
       let list = data.conversations || [];
 
-      // Seed data fetch for virtual matchmaking
-      if (!seedData) {
-        const seedRes = await fetch('/api/v1/auth/seed', { method: 'POST' });
-        seedData = await seedRes.json();
-      }
 
-      if (seedData) {
-        if (currentUser.role === 'agent') {
-          const team = seedData.seedData.find(g => g.agent._id === currentUser._id);
-          if (team) {
-            team.users.forEach(user => {
-              const hasConv = list.some(c => (c.emailId?._id === user._id || c.emailId === user._id));
-              if (!hasConv) {
-                list.push({
-                  _id: `conv-${currentUser._id}-${user._id}`,
-                  agentId: currentUser._id,
-                  emailId: user,
-                  lastMessageAt: new Date(0).toISOString(),
-                  unread: { agent: 0, user: 0 },
-                  isVirtual: true
-                });
-              }
-            });
-          }
-        } else if (currentUser.role === 'user') {
-          const agentId = currentUser.agentId;
-          const agent = seedData.agents.find(a => a._id === agentId);
-          if (agent) {
-            const hasConv = list.some(c => (c.agentId?._id === agent._id || c.agentId === agent._id));
-            if (!hasConv) {
-              list.push({
-                _id: `conv-${agent._id}-${currentUser._id}`,
-                agentId: agent,
-                emailId: currentUser,
-                lastMessageAt: new Date(0).toISOString(),
-                unread: { agent: 0, user: 0 },
-                isVirtual: true
-              });
-            }
-          }
-        }
-      }
 
       list.sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
 

@@ -136,11 +136,8 @@
             scrollbar-width: none;
         }
         
-        select {
-            background-image: none;
-        }
         /* Custom scrollbar for webkit */
-        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #33343b; border-radius: 4px; }
         @keyframes pulse-glow {
@@ -153,6 +150,70 @@
         }
     </style>
 <script>
+        let activeDropdown = null;
+
+        function toggleDropdown(id, event) {
+            if (event) event.stopPropagation();
+            const dropdown = document.getElementById(id);
+            const arrow = document.getElementById(id + 'Arrow');
+            
+            if (activeDropdown && activeDropdown !== dropdown) {
+                activeDropdown.classList.add('hidden');
+                const activeArrow = document.getElementById(activeDropdown.id + 'Arrow');
+                if (activeArrow) activeArrow.classList.remove('rotate-180');
+            }
+
+            if (dropdown) {
+                const isHidden = dropdown.classList.contains('hidden');
+                if (isHidden) {
+                    dropdown.classList.remove('hidden');
+                    if (arrow) arrow.classList.add('rotate-180');
+                    activeDropdown = dropdown;
+                } else {
+                    dropdown.classList.add('hidden');
+                    if (arrow) arrow.classList.remove('rotate-180');
+                    activeDropdown = null;
+                }
+            }
+        }
+
+        function selectDateOption(val, event) {
+            if (event) event.stopPropagation();
+            document.getElementById('selectedDateText').textContent = val;
+            const options = document.querySelectorAll('#dateDropdownOptions button');
+            options.forEach(opt => {
+                if (opt.textContent.trim() === val) {
+                    opt.className = "w-full text-left px-4 py-2.5 text-sm text-text-primary bg-white/5 font-semibold";
+                } else {
+                    opt.className = "w-full text-left px-4 py-2.5 text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors";
+                }
+            });
+            toggleDropdown('dateDropdownOptions');
+        }
+
+        function selectRowsOption(val, event) {
+            if (event) event.stopPropagation();
+            document.getElementById('selectedRowsText').textContent = val;
+            const options = document.querySelectorAll('#rowsDropdownOptions button');
+            options.forEach(opt => {
+                if (opt.textContent.trim() === val) {
+                    opt.className = "w-full text-left px-4 py-2 text-sm text-text-primary bg-white/5 font-semibold";
+                } else {
+                    opt.className = "w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors";
+                }
+            });
+            toggleDropdown('rowsDropdownOptions');
+        }
+
+        document.addEventListener('click', () => {
+            if (activeDropdown) {
+                activeDropdown.classList.add('hidden');
+                const activeArrow = document.getElementById(activeDropdown.id + 'Arrow');
+                if (activeArrow) activeArrow.classList.remove('rotate-180');
+                activeDropdown = null;
+            }
+        });
+
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => {
@@ -160,10 +221,19 @@
                 el.classList.add('text-text-muted', 'border-transparent');
             });
             
-            document.getElementById(tabId).classList.remove('hidden');
+            const target = document.getElementById(tabId);
+            if (target) target.classList.remove('hidden');
             const activeBtn = document.getElementById('btn-' + tabId);
-            activeBtn.classList.remove('text-text-muted', 'border-transparent');
-            activeBtn.classList.add('text-primary', 'border-primary');
+            if (activeBtn) {
+                activeBtn.classList.remove('text-text-muted', 'border-transparent');
+                activeBtn.classList.add('text-primary', 'border-primary');
+            }
+        }
+
+        function copyTxId(id) {
+            navigator.clipboard.writeText(id).then(() => {
+                alert('Copied Reference ID: ' + id);
+            }).catch(() => {});
         }
     </script>
     <script src="navbar.js"></script>
@@ -171,119 +241,62 @@
 <body class="flex flex-col min-h-screen bg-surface-deep text-text-primary">
 <!-- TopNavBar Placeholder -->
 <div id="navbar-placeholder"></div>
-<!-- Desktop Layout Container -->
-<main class="w-full max-w-6xl flex-1 flex flex-col relative mx-auto px-6 pb-24 pt-[100px] md:px-10 md:pt-[110px]">
+
+<!-- Desktop/Mobile Layout Container -->
+<main class="w-full max-w-6xl flex-1 flex flex-col relative mx-auto px-4 sm:px-6 pb-24 pt-[85px] sm:pt-[100px] md:px-10 md:pt-[110px]">
 <!-- Header -->
-<header class="flex justify-between items-center mb-8">
+<header class="flex justify-between items-center mb-6 sm:mb-8">
 <div class="flex items-center space-x-4">
-<h1 class="font-display-lg text-3xl text-primary tracking-tight">Transaction History</h1>
+<h1 class="font-display-lg text-2xl sm:text-3xl text-primary tracking-tight">Transaction History</h1>
+</div>
+</header>
+
+<!-- Tabs (Scrollable on mobile) -->
+<div class="border-b border-white/10 mb-6 flex space-x-6 sm:space-x-8 overflow-x-auto hide-scrollbar whitespace-nowrap">
+<button class="tab-btn pb-3 sm:pb-4 font-body-md text-sm sm:text-base border-b-2 hover:text-on-surface transition-colors text-primary border-primary shrink-0" id="btn-successful" onclick="switchTab('successful')">Successful</button>
+<button class="tab-btn pb-3 sm:pb-4 font-body-md text-sm sm:text-base border-b-2 hover:text-primary transition-colors text-text-muted border-transparent shrink-0" id="btn-pending" onclick="switchTab('pending')">Pending</button>
 </div>
 
-</header>
-<!-- Tabs -->
-<div class="border-b border-white/10 mb-6 flex space-x-8">
-<button class="tab-btn pb-4 font-body-md border-b-2 hover:text-on-surface transition-colors text-primary border-primary" id="btn-pending" onclick="switchTab('pending')">Pending</button>
-<button class="tab-btn pb-4 font-body-md border-b-2 hover:text-primary transition-colors text-text-muted border-transparent" id="btn-successful" onclick="switchTab('successful')">Successful</button>
-</div>
-<!-- Controls (Filters & Limit) -->
-<div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-<div class="flex items-center space-x-4 w-full md:w-auto">
-<div class="relative w-full md:w-48">
-<select class="w-full bg-surface-raised border border-white/10 text-on-surface text-body-md rounded-lg pl-4 pr-10 py-2.5 appearance-none bg-none focus:outline-none focus:border-primary transition-colors cursor-pointer">
-<option>Last 7 Days</option>
-<option selected="">Last 30 Days</option>
-<option>Last 3 Months</option>
-<option>All Time</option>
-</select>
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">keyboard_arrow_down</span>
-</div>
-</div>
-<div class="flex items-center space-x-3 w-full md:w-auto justify-end">
-<span class="text-text-muted text-body-md">Rows per page:</span>
-<div class="relative w-24">
-<select class="w-full bg-surface-raised border border-white/10 text-on-surface text-body-md rounded-lg pl-4 pr-8 py-2.5 appearance-none bg-none focus:outline-none focus:border-primary transition-colors cursor-pointer">
-<option selected="">10</option>
-<option>20</option>
-<option>50</option>
-</select>
-<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">keyboard_arrow_down</span>
+<!-- Controls (Custom Dropdowns) -->
+<div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-6 gap-3 sm:gap-4 z-20 relative">
+<div class="flex items-center space-x-4 w-full sm:w-auto">
+<!-- Custom Date Filter Dropdown -->
+<div class="relative w-full sm:w-48">
+<button onclick="toggleDropdown('dateDropdownOptions', event)" class="w-full flex items-center justify-between bg-surface-raised border border-white/10 text-on-surface text-sm sm:text-body-md rounded-lg pl-4 pr-3 py-2 sm:py-2.5 focus:outline-none focus:border-primary transition-colors cursor-pointer text-left select-none">
+<span id="selectedDateText">Last 30 Days</span>
+<span class="material-symbols-outlined text-text-muted text-xl transition-transform duration-200" id="dateDropdownOptionsArrow">keyboard_arrow_down</span>
+</button>
+<div id="dateDropdownOptions" class="hidden absolute left-0 right-0 mt-1.5 rounded-lg shadow-2xl py-1 z-50 border border-white/10 bg-[#1e1f26]">
+<button onclick="selectDateOption('Last 7 Days', event)" class="w-full text-left px-4 py-2.5 text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors">Last 7 Days</button>
+<button onclick="selectDateOption('Last 30 Days', event)" class="w-full text-left px-4 py-2.5 text-sm text-text-primary bg-white/5 font-semibold">Last 30 Days</button>
+<button onclick="selectDateOption('Last 3 Months', event)" class="w-full text-left px-4 py-2.5 text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors">Last 3 Months</button>
+<button onclick="selectDateOption('All Time', event)" class="w-full text-left px-4 py-2.5 text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors">All Time</button>
 </div>
 </div>
 </div>
-<!-- Pending Tab Content -->
-<div class="tab-content flex-1 flex flex-col" id="pending">
-<div class="glass-panel rounded-xl overflow-x-auto border border-white/5 mb-6">
-<table class="w-full text-left border-collapse min-w-[800px]">
-<thead>
-<tr class="border-b border-white/5 bg-surface-raised/50">
-<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Date/Time</th>
-<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Reference ID</th>
-<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Payment Method</th>
-<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted text-right w-1/5">Amount</th>
-<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted text-center w-1/5">Status</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-white/5 text-body-md bg-surface-deep/40">
-<tr class="hover:bg-surface-raised/30 transition-colors">
-<td class="py-4 px-6 text-on-surface">
-<div class="font-label-numeric">Oct 10, 09:15</div>
-<div class="text-sm text-text-muted mt-1">2023</div>
-</td>
-<td class="py-4 px-6">
-<div class="flex items-center space-x-2">
-<span class="font-label-numeric text-text-muted">WDL-443B</span>
-<button class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
-</div>
-</td>
-<td class="py-4 px-6">
-<div class="flex items-center space-x-3">
-<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-on-surface text-[18px]">account_balance</span>
-</div>
-<span class="text-text-primary">Bank Transfer</span>
-</div>
-</td>
-<td class="py-4 px-6 text-right">
-<span class="font-label-numeric text-on-surface font-bold">- $10,000.00</span>
-</td>
-<td class="py-4 px-6 text-center">
-<span class="inline-block px-3 py-1 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/20 font-label-caps">PENDING</span>
-</td>
-</tr>
-<tr class="hover:bg-surface-raised/30 transition-colors">
-<td class="py-4 px-6 text-on-surface">
-<div class="font-label-numeric">Oct 09, 14:22</div>
-<div class="text-sm text-text-muted mt-1">2023</div>
-</td>
-<td class="py-4 px-6">
-<div class="flex items-center space-x-2">
-<span class="font-label-numeric text-text-muted">DEP-812C</span>
-<button class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
-</div>
-</td>
-<td class="py-4 px-6">
-<div class="flex items-center space-x-3">
-<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-on-surface text-[18px]">currency_bitcoin</span>
-</div>
-<span class="text-text-primary">Bitcoin</span>
-</div>
-</td>
-<td class="py-4 px-6 text-right">
-<span class="font-label-numeric text-secondary-fixed-dim font-bold">+ $2,500.00</span>
-</td>
-<td class="py-4 px-6 text-center">
-<span class="inline-block px-3 py-1 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/20 font-label-caps">PENDING</span>
-</td>
-</tr>
-</tbody>
-</table>
+
+<div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
+<span class="text-text-muted text-xs sm:text-body-md whitespace-nowrap">Rows per page:</span>
+<!-- Custom Rows per page Dropdown -->
+<div class="relative w-20 sm:w-24">
+<button onclick="toggleDropdown('rowsDropdownOptions', event)" class="w-full flex items-center justify-between bg-surface-raised border border-white/10 text-on-surface text-sm sm:text-body-md rounded-lg pl-3 pr-2 py-2 sm:py-2.5 focus:outline-none focus:border-primary transition-colors cursor-pointer text-left select-none">
+<span id="selectedRowsText">10</span>
+<span class="material-symbols-outlined text-text-muted text-lg sm:text-xl transition-transform duration-200" id="rowsDropdownOptionsArrow">keyboard_arrow_down</span>
+</button>
+<div id="rowsDropdownOptions" class="hidden absolute left-0 right-0 mt-1.5 rounded-lg shadow-2xl py-1 z-50 border border-white/10 bg-[#1e1f26]">
+<button onclick="selectRowsOption('10', event)" class="w-full text-left px-4 py-2 text-sm text-text-primary bg-white/5 font-semibold">10</button>
+<button onclick="selectRowsOption('20', event)" class="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors">20</button>
+<button onclick="selectRowsOption('50', event)" class="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors">50</button>
 </div>
 </div>
-<!-- Successful Tab Content (Active by default based on original design contents) -->
-<div class="tab-content flex-1 flex flex-col hidden" id="successful">
-<div class="glass-panel rounded-xl overflow-x-auto border border-white/5 mb-6">
-<table class="w-full text-left border-collapse min-w-[800px]">
+</div>
+</div>
+
+<!-- Successful Tab Content -->
+<div class="tab-content flex-1 flex flex-col" id="successful">
+<!-- Desktop Table View -->
+<div class="hidden md:block glass-panel rounded-xl overflow-x-auto border border-white/5 mb-6">
+<table class="w-full text-left border-collapse min-w-[700px]">
 <thead>
 <tr class="border-b border-white/5 bg-surface-raised/50">
 <th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Date/Time</th>
@@ -302,7 +315,7 @@
 <td class="py-4 px-6">
 <div class="flex items-center space-x-2">
 <span class="font-label-numeric text-text-muted">TXN-8942A</span>
-<button class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+<button onclick="copyTxId('TXN-8942A')" class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
 </div>
 </td>
 <td class="py-4 px-6">
@@ -328,7 +341,7 @@
 <td class="py-4 px-6">
 <div class="flex items-center space-x-2">
 <span class="font-label-numeric text-text-muted">DEP-331X</span>
-<button class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+<button onclick="copyTxId('DEP-331X')" class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
 </div>
 </td>
 <td class="py-4 px-6">
@@ -349,33 +362,210 @@
 </tbody>
 </table>
 </div>
+
+<!-- Mobile Cards View -->
+<div class="block md:hidden space-y-3 mb-6">
+<div class="glass-panel rounded-xl p-4 flex flex-col gap-3">
+<div class="flex justify-between items-center pb-2 border-b border-white/5">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-sm">currency_bitcoin</span>
 </div>
-<!-- Pagination -->
-<div class="flex items-center justify-between border-t border-white/10 pt-6 mt-auto">
-<div class="text-text-muted font-body-md">
+<span class="text-sm font-semibold text-text-primary">Crypto Deposit</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-fixed-dim/10 text-secondary-fixed-dim border border-secondary-fixed-dim/20 text-[10px] font-bold">COMPLETED</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<div class="flex items-center gap-1.5 text-text-muted">
+<span>Ref:</span>
+<span class="font-label-numeric font-medium text-on-surface">TXN-8942A</span>
+<button onclick="copyTxId('TXN-8942A')" class="text-text-muted hover:text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+</div>
+<span class="font-label-numeric text-secondary-fixed-dim font-bold text-sm">+ $5,000.00</span>
+</div>
+<div class="text-[11px] text-text-muted flex justify-between">
+<span>Today, 14:32</span>
+<span>Oct 14, 2023</span>
+</div>
+</div>
+
+<div class="glass-panel rounded-xl p-4 flex flex-col gap-3">
+<div class="flex justify-between items-center pb-2 border-b border-white/5">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-sm">credit_card</span>
+</div>
+<span class="text-sm font-semibold text-text-primary">Credit Card</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-fixed-dim/10 text-secondary-fixed-dim border border-secondary-fixed-dim/20 text-[10px] font-bold">COMPLETED</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<div class="flex items-center gap-1.5 text-text-muted">
+<span>Ref:</span>
+<span class="font-label-numeric font-medium text-on-surface">DEP-331X</span>
+<button onclick="copyTxId('DEP-331X')" class="text-text-muted hover:text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+</div>
+<span class="font-label-numeric text-secondary-fixed-dim font-bold text-sm">+ $1,000.00</span>
+</div>
+<div class="text-[11px] text-text-muted flex justify-between">
+<span>Oct 05, 11:20</span>
+<span>2023</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Pending Tab Content -->
+<div class="tab-content flex-1 flex flex-col hidden" id="pending">
+<!-- Desktop Table View -->
+<div class="hidden md:block glass-panel rounded-xl overflow-x-auto border border-white/5 mb-6">
+<table class="w-full text-left border-collapse min-w-[700px]">
+<thead>
+<tr class="border-b border-white/5 bg-surface-raised/50">
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Date/Time</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Reference ID</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted w-1/5">Payment Method</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted text-right w-1/5">Amount</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-text-muted text-center w-1/5">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5 text-body-md bg-surface-deep/40">
+<tr class="hover:bg-surface-raised/30 transition-colors">
+<td class="py-4 px-6 text-on-surface">
+<div class="font-label-numeric">Oct 10, 09:15</div>
+<div class="text-sm text-text-muted mt-1">2023</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-2">
+<span class="font-label-numeric text-text-muted">WDL-443B</span>
+<button onclick="copyTxId('WDL-443B')" class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[18px]">account_balance</span>
+</div>
+<span class="text-text-primary">Bank Transfer</span>
+</div>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-label-numeric text-on-surface font-bold">- $10,000.00</span>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-block px-3 py-1 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/20 font-label-caps">PENDING</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-raised/30 transition-colors">
+<td class="py-4 px-6 text-on-surface">
+<div class="font-label-numeric">Oct 09, 14:22</div>
+<div class="text-sm text-text-muted mt-1">2023</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-2">
+<span class="font-label-numeric text-text-muted">DEP-812C</span>
+<button onclick="copyTxId('DEP-812C')" class="text-text-muted hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[18px]">currency_bitcoin</span>
+</div>
+<span class="text-text-primary">Bitcoin</span>
+</div>
+</td>
+<td class="py-4 px-6 text-right">
+<span class="font-label-numeric text-secondary-fixed-dim font-bold">+ $2,500.00</span>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-block px-3 py-1 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/20 font-label-caps">PENDING</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Mobile Cards View -->
+<div class="block md:hidden space-y-3 mb-6">
+<div class="glass-panel rounded-xl p-4 flex flex-col gap-3">
+<div class="flex justify-between items-center pb-2 border-b border-white/5">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-sm">account_balance</span>
+</div>
+<span class="text-sm font-semibold text-text-primary">Bank Transfer</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/20 text-[10px] font-bold">PENDING</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<div class="flex items-center gap-1.5 text-text-muted">
+<span>Ref:</span>
+<span class="font-label-numeric font-medium text-on-surface">WDL-443B</span>
+<button onclick="copyTxId('WDL-443B')" class="text-text-muted hover:text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+</div>
+<span class="font-label-numeric text-on-surface font-bold text-sm">- $10,000.00</span>
+</div>
+<div class="text-[11px] text-text-muted flex justify-between">
+<span>Oct 10, 09:15</span>
+<span>2023</span>
+</div>
+</div>
+
+<div class="glass-panel rounded-xl p-4 flex flex-col gap-3">
+<div class="flex justify-between items-center pb-2 border-b border-white/5">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-sm">currency_bitcoin</span>
+</div>
+<span class="text-sm font-semibold text-text-primary">Bitcoin</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/20 text-[10px] font-bold">PENDING</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<div class="flex items-center gap-1.5 text-text-muted">
+<span>Ref:</span>
+<span class="font-label-numeric font-medium text-on-surface">DEP-812C</span>
+<button onclick="copyTxId('DEP-812C')" class="text-text-muted hover:text-primary"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+</div>
+<span class="font-label-numeric text-secondary-fixed-dim font-bold text-sm">+ $2,500.00</span>
+</div>
+<div class="text-[11px] text-text-muted flex justify-between">
+<span>Oct 09, 14:22</span>
+<span>2023</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Responsive Pagination -->
+<div class="flex flex-col sm:flex-row items-center justify-between border-t border-white/10 pt-6 mt-auto gap-4 text-center sm:text-left">
+<div class="text-text-muted text-xs sm:text-body-md">
 Showing <span class="text-on-surface font-semibold">1</span> to <span class="text-on-surface font-semibold">10</span> of <span class="text-on-surface font-semibold">45</span> entries
 </div>
-<div class="flex items-center space-x-2">
-<button class="px-4 py-2 rounded-lg border border-white/10 text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="">
+<div class="flex items-center space-x-2 flex-wrap justify-center">
+<button class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg border border-white/10 text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="">
 Previous
 </button>
 <div class="flex items-center space-x-1">
-<button class="w-10 h-10 rounded-lg bg-primary text-on-primary-fixed font-semibold flex items-center justify-center">1</button>
-<button class="w-10 h-10 rounded-lg border border-transparent text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors flex items-center justify-center">2</button>
-<button class="w-10 h-10 rounded-lg border border-transparent text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors flex items-center justify-center">3</button>
-<span class="text-text-muted px-2">...</span>
-<button class="w-10 h-10 rounded-lg border border-transparent text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors flex items-center justify-center">5</button>
+<button class="w-8 h-8 sm:w-10 sm:h-10 text-xs sm:text-sm rounded-lg bg-primary text-on-primary-fixed font-semibold flex items-center justify-center">1</button>
+<button class="w-8 h-8 sm:w-10 sm:h-10 text-xs sm:text-sm rounded-lg border border-transparent text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors flex items-center justify-center">2</button>
+<button class="w-8 h-8 sm:w-10 sm:h-10 text-xs sm:text-sm rounded-lg border border-transparent text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors flex items-center justify-center">3</button>
+<span class="text-text-muted px-1 text-xs sm:text-sm">...</span>
+<button class="w-8 h-8 sm:w-10 sm:h-10 text-xs sm:text-sm rounded-lg border border-transparent text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors flex items-center justify-center">5</button>
 </div>
-<button class="px-4 py-2 rounded-lg border border-white/10 text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors">
+<button class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg border border-white/10 text-text-muted hover:bg-surface-raised hover:text-on-surface transition-colors">
 Next
 </button>
 </div>
 </div>
+
 <!-- Floating Chat Button -->
-<button class="fixed bottom-8 right-8 w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center z-40 fab-pulse shadow-2xl text-on-secondary-container hover:scale-105 transition-transform">
-<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: &quot;FILL&quot; 1;">forum</span>
+<button class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 w-14 h-14 sm:w-16 sm:h-16 bg-secondary-container rounded-full flex items-center justify-center z-40 fab-pulse shadow-2xl text-on-secondary-container hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[28px] sm:text-[32px]" style="font-variation-settings: &quot;FILL&quot; 1;">forum</span>
 </button>
 </main>
+
 <script>
     // Initialize tab state on load
     document.addEventListener('DOMContentLoaded', () => {

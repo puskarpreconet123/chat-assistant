@@ -48,15 +48,9 @@ export async function createAgent(req, res) {
 
 export async function createUser(req, res) {
   try {
-    const { id, name, agentId, emailId, password } = req.body;
-    if (!name || !agentId) {
-      return res.status(400).json({ error: 'User name and agentId are required' });
-    }
-
-    // Verify agent exists
-    const agent = await Agent.findById(agentId);
-    if (!agent) {
-      return res.status(400).json({ error: `Agent with ID "${agentId}" does not exist` });
+    const { id, name, agentId, emailId, password, mob, mobile } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'User name is required' });
     }
 
     const userId = id ? id.trim() : `user-${Math.random().toString(36).substring(2, 10)}`;
@@ -66,12 +60,11 @@ export async function createUser(req, res) {
     const user = await User.findByIdAndUpdate(
       userId,
       { 
-        agentId, 
         emailId: finalEmailId,
         password: finalPassword,
         name: name.trim(), 
-        status: 'active', 
-        createdAt: new Date() 
+        mob: mob || mobile || '',
+        status: 'active'
       },
       { upsert: true, new: true }
     );

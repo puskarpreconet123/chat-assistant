@@ -1,11 +1,13 @@
 import { config } from './config/env.js';
 import { connectDB, disconnectDB } from './config/database.js';
+import { connectMySQL, disconnectMySQL } from './config/mysql.js';
 import { closeRedisConnections } from './config/redis.js';
 import { startWorkerLoop, stopWorkerLoop } from './queue/streamWorker.js';
 
 async function bootstrapWorker() {
   try {
     await connectDB();
+    await connectMySQL();
     console.log(`=======================================================`);
     console.log(` Starting Redis Stream Queue Worker (${config.gatewayId})`);
     console.log(`=======================================================`);
@@ -17,6 +19,7 @@ async function bootstrapWorker() {
       console.log(`\n[Worker] Received ${signal}. Shutting down worker...`);
       stopWorkerLoop();
       await disconnectDB();
+      await disconnectMySQL();
       await closeRedisConnections();
       console.log('[Worker] Graceful worker shutdown completed');
       process.exit(0);

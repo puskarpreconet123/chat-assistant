@@ -17,6 +17,7 @@ import { Agent } from '../src/models/Agent.js';
 import { User } from '../src/models/User.js';
 import { Conversation } from '../src/models/Conversation.js';
 import { Message } from '../src/models/Message.js';
+import { connectMySQL, disconnectMySQL, pool } from '../src/config/mysql.js';
 
 let httpServer;
 let serverPort;
@@ -31,12 +32,15 @@ async function runTests() {
   console.log('=======================================================');
 
   try {
-    // 1. Start MongoDB In-Memory Server
-    console.log('\n[Setup] Starting in-memory Mongo & Redis...');
+    // 1. Start MongoDB In-Memory Server & Connect MySQL
+    console.log('\n[Setup] Starting in-memory Mongo, Redis & MySQL...');
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
     await mongoose.connect(mongoUri);
     console.log(`[Setup] In-memory MongoDB connected to ${mongoUri}`);
+    await connectMySQL();
+    await pool.query("DELETE FROM users WHERE email IN ('user-test-1@example.com', 'agent-test-1@luxebet.com')");
+    console.log(`[Setup] MySQL connected and test users cleared`);
 
     // 2. Setup test server
     httpServer = http.createServer(app);
@@ -70,7 +74,7 @@ async function runTests() {
       name: 'Alice', 
       status: 'active' 
     });
-    console.log('✔ Agent and User created in MongoDB');
+    console.log('✔ Agent created in MongoDB and User created in MySQL');
 
     // ----------------------------------------------------
     // TEST 2: Generate JWT Tokens
@@ -389,6 +393,12 @@ async function runTests() {
     await mongoose.disconnect();
     if (mongoServer) await mongoServer.stop();
     await closeRedisConnections();
+    if (pool) {
+      try {
+        await pool.query("DELETE FROM users WHERE email IN ('user-test-1@example.com', 'agent-test-1@luxebet.com')");
+      } catch (err) {}
+    }
+    await disconnectMySQL();
   }
 }
 

@@ -366,7 +366,7 @@
             const res = await fetch('/api/v1/admin/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: email, emailId: email, name, agentId, password })
+                body: JSON.stringify({ id: email, emailId: email, name, mob: phone, password })
             });
             const data = await res.json();
 

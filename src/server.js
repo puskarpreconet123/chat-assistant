@@ -2,14 +2,16 @@ import http from 'http';
 import { app } from './app.js';
 import { config } from './config/env.js';
 import { connectDB, disconnectDB } from './config/database.js';
+import { connectMySQL, disconnectMySQL } from './config/mysql.js';
 import { closeRedisConnections } from './config/redis.js';
 import { setupSocketGateway } from './socket/gateway.js';
 import { startWorkerLoop, stopWorkerLoop } from './queue/streamWorker.js';
 
 async function bootstrap() {
   try {
-    // 1. Connect MongoDB
+    // 1. Connect MongoDB & MySQL
     await connectDB();
+    await connectMySQL();
 
     // 2. Create HTTP server & attach Socket.io Gateway
     const httpServer = http.createServer(app);
@@ -37,6 +39,7 @@ async function bootstrap() {
       io.close();
       httpServer.close(async () => {
         await disconnectDB();
+        await disconnectMySQL();
         await closeRedisConnections();
         console.log('[Server] Graceful shutdown completed');
         process.exit(0);

@@ -17,5 +17,12 @@ export const config = {
     secretAccessKey: process.env.WASABI_SECRET_ACCESS_KEY || process.env.S3_SECRET_ACCESS_KEY || 'mock-secret-key',
     endpoint: process.env.WASABI_ENDPOINT || process.env.S3_ENDPOINT || 'https://s3.us-east-1.wasabisys.com',
     cdnBaseUrl: process.env.WASABI_CDN_BASE_URL || process.env.CDN_BASE_URL || 'https://s3.us-east-1.wasabisys.com/chat-recordings'
+  },
+  mysql: {
+    host: process.env.MYSQL_HOST || '127.0.0.1',
+    port: parseInt(process.env.MYSQL_PORT || '3306', 10),
+    user: process.env.MYSQL_USER || 'root',
+    password: process.env.MYSQL_PASSWORD || '',
+    database: process.env.MYSQL_DATABASE || 'testcrm'
   }
 };

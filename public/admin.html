@@ -678,6 +678,10 @@
             <input type="text" id="userNameInput" placeholder="e.g. Client Diana 1" required />
           </div>
           <div class="form-group">
+            <label for="userMobInput">Mobile Number (Optional)</label>
+            <input type="text" id="userMobInput" placeholder="e.g. 9876543210" />
+          </div>
+          <div class="form-group">
             <label for="userAgentSelect">Assign to Agent</label>
             <select id="userAgentSelect" required>
               <option value="">Select Agent...</option>
@@ -704,6 +708,7 @@
     const emailIdInput = document.getElementById('emailIdInput');
     const userPasswordInput = document.getElementById('userPasswordInput');
     const userNameInput = document.getElementById('userNameInput');
+    const userMobInput = document.getElementById('userMobInput');
     const userAgentSelect = document.getElementById('userAgentSelect');
     const bulkAgentSelect = document.getElementById('bulkAgentSelect');
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
@@ -1045,13 +1050,14 @@
       const id = emailIdInput.value.trim();
       const password = userPasswordInput.value;
       const name = userNameInput.value.trim();
+      const mob = userMobInput ? userMobInput.value.trim() : '';
       const agentId = userAgentSelect.value;
 
       try {
         const res = await fetch('/api/v1/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, emailId: id, name, agentId, password })
+          body: JSON.stringify({ id, emailId: id, name, mob, agentId, password })
         });
         const result = await res.json();
 
