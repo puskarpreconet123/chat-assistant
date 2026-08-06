@@ -56,6 +56,7 @@ app.get(['/view/login.html', '/login.html'], (req, res) => {
   if (user) {
     return res.redirect('/');
   }
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(__dirname, '../public/view/login.html'));
 });
 
@@ -65,6 +66,7 @@ app.get('/view/signup.html', (req, res) => {
   if (user) {
     return res.redirect('/');
   }
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(__dirname, '../public/view/signup.html'));
 });
 
@@ -78,6 +80,7 @@ app.get(['/chat.html', '/admin.html'], (req, res, next) => {
     return res.redirect('/view/home.html');
   }
   const page = req.path.split('/').pop() || 'chat.html';
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(__dirname, `../public/${page}`));
 });
 
@@ -91,6 +94,7 @@ app.get(['/view/home.html', '/view/recharge.html', '/view/records.html'], (req, 
     return res.redirect('/chat.html');
   }
   const page = req.path.split('/').pop() || 'home.html';
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(__dirname, `../public/view/${page}`));
 });
 

@@ -32,7 +32,7 @@ export async function checkRateLimit(identifier, action = 'general', limit = 100
 export function restRateLimiter(limit = 60, windowSec = 60) {
   return async (req, res, next) => {
     try {
-      const identifier = req.user ? req.user.userId || req.user.id : req.ip;
+      const identifier = req.user ? req.user.emailId || req.user.id : req.ip;
       const action = req.path;
       const result = await checkRateLimit(identifier, action, limit, windowSec);
 

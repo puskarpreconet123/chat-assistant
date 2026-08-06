@@ -42,7 +42,7 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       image,
       createdAt = new Date(),
       agentId,
-      userId,
+      emailId,
       recipientId,
       recipientType
     } = data;
@@ -69,7 +69,7 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       {
         $set: {
           agentId,
-          userId,
+          emailId,
           lastMessageAt: new Date(createdAt)
         },
         $inc: {

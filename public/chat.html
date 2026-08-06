@@ -535,6 +535,72 @@
       font-size: 0.75rem;
       width: auto;
     }
+
+    /* Mobile responsive overrides */
+    #mobileBackBtn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0.35rem;
+      align-items: center;
+      justify-content: center;
+      margin-right: 0.5rem;
+      outline: none;
+      line-height: 1;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: 0.65rem 1rem;
+      }
+      
+      header a, header button {
+        font-size: 0.75rem !important;
+        padding: 0.35rem 0.7rem !important;
+      }
+
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: flex; /* Active by default */
+      }
+
+      .chat-panel {
+        display: none; /* Hidden by default */
+        height: 100%;
+      }
+
+      /* Active Conversation Mobile Mode: Show Chat panel, hide sidebar */
+      .app-container.active-chat-mode .sidebar {
+        display: none !important;
+      }
+
+      .app-container.active-chat-mode .chat-panel {
+        display: flex !important;
+      }
+
+      .app-container.active-chat-mode #mobileBackBtn {
+        display: inline-flex;
+      }
+      
+      /* Make inputs and buttons touch friendly */
+      .input-bar {
+        padding: 0.65rem 0.75rem;
+      }
+      
+      .input-bar input {
+        padding: 0.65rem 0.85rem;
+      }
+      
+      .input-bar .btn {
+        padding: 0.65rem 0.85rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -579,6 +645,7 @@
     <div class="chat-panel">
       <div class="chat-header">
         <div class="chat-header-left">
+          <button id="mobileBackBtn" onclick="backToSidebar()" title="Back to Chats list">←</button>
           <div id="headerAvatar" class="avatar" style="display:none;">AA</div>
           <div class="active-info">
             <div id="activeConvTitle" style="font-weight: 700; font-size: 0.95rem;">No Active Chat Selected</div>
@@ -667,7 +734,7 @@
         }
         currentToken = parsed.token;
         currentUser = parsed.user;
-        if (currentUser) currentUser._id = currentUser._id || currentUser.userId;
+        if (currentUser) currentUser._id = currentUser._id || currentUser.emailId;
         currentUser.role = parsed.role;
         connectSocket();
       } catch (err) {
@@ -680,7 +747,7 @@
       if (socket) socket.disconnect();
       if (presenceInterval) clearInterval(presenceInterval);
 
-      addLog('Connecting Socket.io', { role: currentUser.role, userId: currentUser._id });
+      addLog('Connecting Socket.io', { role: currentUser.role, emailId: currentUser._id });
 
       socket = io({
         auth: { token: currentToken },
@@ -690,7 +757,7 @@
       socket.on('connect', () => {
         connectionStatus.className = 'badge-status';
         connectionStatus.innerHTML = `<span class="dot"></span> Online`;
-        addLog('Socket Connected', { socketId: socket.id, userId: currentUser._id });
+        addLog('Socket Connected', { socketId: socket.id, emailId: currentUser._id });
 
         msgInput.disabled = false;
         btnSendText.disabled = false;
@@ -744,9 +811,9 @@
 
       socket.on('presence:res', (res) => {
         if (res && activeConversation) {
-          const partner = currentUser.role === 'agent' ? activeConversation.userId : activeConversation.agentId;
+          const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
           const currentPartnerId = partner?._id || partner;
-          if (res.userId === currentPartnerId) {
+          if (res.emailId === currentPartnerId) {
             const presenceIndicator = document.getElementById('presenceIndicator');
             if (presenceIndicator) {
               if (res.isOnline) {
@@ -777,7 +844,7 @@
         conversationList.innerHTML = '';
         if (globalConversations.length > 0) {
           globalConversations.forEach((conv, index) => {
-            const partner = currentUser.role === 'agent' ? conv.userId : conv.agentId;
+            const partner = currentUser.role === 'agent' ? conv.emailId : conv.agentId;
             const partnerName = partner?.name || partner || 'Chat Partner';
             const unreadCount = currentUser.role === 'agent' ? (conv.unread?.agent || 0) : (conv.unread?.user || 0);
             
@@ -857,7 +924,7 @@
 
           const item = document.createElement('div');
           item.className = 'conv-item';
-          item.dataset.userId = user._id;
+          item.dataset.emailId = user._id;
 
           item.innerHTML = `
             <div class="avatar" style="background-color: ${avatarColor};">${initials}</div>
@@ -883,7 +950,7 @@
 
     function startOrSelectConversationWithUser(user) {
       const existing = globalConversations.find(c => {
-        const partner = currentUser.role === 'agent' ? c.userId : c.agentId;
+        const partner = currentUser.role === 'agent' ? c.emailId : c.agentId;
         const partnerId = partner?._id || partner;
         return partnerId === user._id;
       });
@@ -894,7 +961,7 @@
         const virtualConv = {
           _id: `conv-${currentUser._id}-${user._id}`,
           agentId: currentUser._id,
-          userId: user,
+          emailId: user,
           lastMessageAt: new Date(0).toISOString(),
           unread: { agent: 0, user: 0 },
           isVirtual: true
@@ -903,11 +970,26 @@
       }
     }
 
+    function backToSidebar() {
+      const container = document.querySelector('.app-container');
+      if (container) {
+        container.classList.remove('active-chat-mode');
+      }
+      activeConversation = null;
+      document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+    }
+
     async function selectConversation(conv) {
       activeConversation = conv;
-      const partner = currentUser.role === 'agent' ? conv.userId : conv.agentId;
+      const partner = currentUser.role === 'agent' ? conv.emailId : conv.agentId;
       const partnerName = partner?.name || partner || 'Chat Partner';
       const partnerId = partner?._id || partner;
+
+      // Switch mobile view to chat panel
+      const container = document.querySelector('.app-container');
+      if (container) {
+        container.classList.add('active-chat-mode');
+      }
 
       headerAvatar.style.display = 'flex';
       headerAvatar.textContent = getInitials(partnerName);
@@ -917,7 +999,7 @@
       paginationCursor = null;
 
       document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
-      const activeEl = document.querySelector(`[data-conv-id="${conv._id}"]`) || document.querySelector(`[data-user-id="${partnerId}"]`);
+      const activeEl = document.querySelector(`[data-conv-id="${conv._id}"]`) || document.querySelector(`[data-email-id="${partnerId}"]`);
       if (activeEl) {
         activeEl.classList.add('active');
         const badge = activeEl.querySelector('.unread-badge');
@@ -958,7 +1040,7 @@
 
     function pollPresence(targetId) {
       if (!socket || !socket.connected) return;
-      socket.emit('presence:check', { userId: targetId });
+      socket.emit('presence:check', { emailId: targetId });
     }
 
     async function fetchMessages(clear = false) {
@@ -1060,7 +1142,7 @@
 
       if (msg._id && messagesContainer.querySelector(`[data-msg-id="${msg._id}"]`)) return;
 
-      const isOutgoing = msg.senderId === (currentUser._id || currentUser.userId);
+      const isOutgoing = msg.senderId === (currentUser._id || currentUser.emailId);
       const bubble = document.createElement('div');
       bubble.className = `message-bubble ${isOutgoing ? 'outgoing' : 'incoming'}`;
       if (msg._id) bubble.dataset.msgId = msg._id;
@@ -1217,11 +1299,11 @@
       if (!text) return;
       if (!socket || !socket.connected) return alert('Establish websocket connection first!');
 
-      const partner = currentUser.role === 'agent' ? activeConversation.userId : activeConversation.agentId;
+      const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
       const recipientId = partner?._id || partner;
       const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
-      const userId = currentUser.role === 'user' ? currentUser._id : recipientId;
-      const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${userId}`;
+      const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
+      const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${emailId}`;
       const messageId = 'msg-' + Date.now();
 
       if (activeConversation.isVirtual) {
@@ -1329,11 +1411,11 @@
     }
 
     async function uploadAudioBlob(audioBlob, duration) {
-      const partner = currentUser.role === 'agent' ? activeConversation.userId : activeConversation.agentId;
+      const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
       const recipientId = partner?._id || partner;
       const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
-      const userId = currentUser.role === 'user' ? currentUser._id : recipientId;
-      const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${userId}`;
+      const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
+      const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${emailId}`;
       const messageId = 'msg-voice-' + Date.now();
 
       msgInput.placeholder = 'Uploading voice note...';
@@ -1435,11 +1517,11 @@
     });
 
     async function uploadImage(file) {
-      const partner = currentUser.role === 'agent' ? activeConversation.userId : activeConversation.agentId;
+      const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
       const recipientId = partner?._id || partner;
       const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
-      const userId = currentUser.role === 'user' ? currentUser._id : recipientId;
-      const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${userId}`;
+      const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
+      const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${emailId}`;
       const messageId = 'msg-image-' + Date.now();
 
       msgInput.placeholder = 'Uploading image...';

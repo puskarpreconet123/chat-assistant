@@ -26,24 +26,24 @@ export function setupSocketGateway(httpServer) {
   io.use(socketAuthMiddleware);
 
   io.on('connection', async (socket) => {
-    const { userId, role, agentId, name } = socket.data.user;
+    const { emailId, role, agentId, name } = socket.data.user;
     const gatewayId = config.gatewayId;
-    const userRoom = `user:${userId}`;
+    const userRoom = `user:${emailId}`;
 
-    console.log(`[Gateway:${gatewayId}] Client connected: ${userId} (${role}) socket ${socket.id}`);
+    console.log(`[Gateway:${gatewayId}] Client connected: ${emailId} (${role}) socket ${socket.id}`);
 
     // Join Socket.io room for targeted fan-out across server instances
     socket.join(userRoom);
 
     // Register presence in Redis (TTL 60s)
-    await setPresence(userId, gatewayId, 60);
+    await setPresence(emailId, gatewayId, 60);
 
     // Periodic Heartbeat to renew presence TTL
     const heartbeatInterval = setInterval(async () => {
       try {
-        await renewPresence(userId, gatewayId, 60);
+        await renewPresence(emailId, gatewayId, 60);
       } catch (err) {
-        console.error(`[Gateway] Heartbeat failed for ${userId}:`, err.message);
+        console.error(`[Gateway] Heartbeat failed for ${emailId}:`, err.message);
       }
     }, 30000);
 
@@ -53,7 +53,7 @@ export function setupSocketGateway(httpServer) {
     socket.on('message:send', async (data, ackCallback) => {
       try {
         // Rate limiting check
-        const rateCheck = await checkRateLimit(userId, 'message:send', 60, 60);
+        const rateCheck = await checkRateLimit(emailId, 'message:send', 60, 60);
         if (!rateCheck.allowed) {
           const errPayload = { error: 'Rate limit exceeded for message:send' };
           if (typeof ackCallback === 'function') ackCallback(errPayload);
@@ -89,15 +89,15 @@ export function setupSocketGateway(httpServer) {
         const messageId = data._id || uuidv4();
         const createdAt = new Date();
 
-        // Determine agentId & userId for Conversation mapping
-        const currentAgentId = role === 'agent' ? userId : agentId || recipientId;
-        const currentUserId = role === 'user' ? userId : recipientId;
+        // Determine agentId & emailId for Conversation mapping
+        const currentAgentId = role === 'agent' ? emailId : agentId || recipientId;
+        const currentEmailId = role === 'user' ? emailId : recipientId;
         const recipientType = role === 'agent' ? 'user' : 'agent';
 
         const messagePayload = {
           _id: messageId,
           conversationId,
-          senderId: userId,
+          senderId: emailId,
           senderType: role,
           type,
           text: type === 'text' ? text : undefined,
@@ -106,7 +106,7 @@ export function setupSocketGateway(httpServer) {
           status: 'sent',
           createdAt,
           agentId: currentAgentId,
-          userId: currentUserId,
+          emailId: currentEmailId,
           recipientId,
           recipientType
         };
@@ -126,7 +126,7 @@ export function setupSocketGateway(httpServer) {
         }
         socket.emit('message:queued', responsePayload);
       } catch (err) {
-        console.error(`[Gateway] Error in message:send for ${userId}:`, err);
+        console.error(`[Gateway] Error in message:send for ${emailId}:`, err);
         if (typeof ackCallback === 'function') ackCallback({ error: err.message });
       }
     });
@@ -154,7 +154,7 @@ export function setupSocketGateway(httpServer) {
 
         if (typeof ackCallback === 'function') ackCallback(null, { success: true });
       } catch (err) {
-        console.error(`[Gateway] Error in message:delivered for ${userId}:`, err);
+        console.error(`[Gateway] Error in message:delivered for ${emailId}:`, err);
       }
     });
 
@@ -186,7 +186,7 @@ export function setupSocketGateway(httpServer) {
         // 3. Relay read receipt back to sender's room
         io.to(`user:${senderId}`).emit('message:read', {
           conversationId,
-          readBy: userId,
+          readBy: emailId,
           messageIds: messageIds || [],
           modifiedCount: result.modifiedCount,
           readAt: new Date()
@@ -194,7 +194,7 @@ export function setupSocketGateway(httpServer) {
 
         if (typeof ackCallback === 'function') ackCallback(null, { success: true, count: result.modifiedCount });
       } catch (err) {
-        console.error(`[Gateway] Error in message:read for ${userId}:`, err);
+        console.error(`[Gateway] Error in message:read for ${emailId}:`, err);
       }
     });
 
@@ -203,16 +203,16 @@ export function setupSocketGateway(httpServer) {
     // ----------------------------------------------------
     socket.on('presence:check', async (data, ackCallback) => {
       try {
-        const targetUserId = typeof data === 'string' ? data : data?.userId;
-        if (!targetUserId) return;
+        const targetEmailId = typeof data === 'string' ? data : data?.emailId;
+        if (!targetEmailId) return;
 
-        const online = await isOnline(targetUserId);
-        const result = { userId: targetUserId, isOnline: online };
+        const online = await isOnline(targetEmailId);
+        const result = { emailId: targetEmailId, isOnline: online };
 
         if (typeof ackCallback === 'function') ackCallback(null, result);
         socket.emit('presence:res', result);
       } catch (err) {
-        console.error(`[Gateway] Error in presence:check for ${userId}:`, err);
+        console.error(`[Gateway] Error in presence:check for ${emailId}:`, err);
       }
     });
 
@@ -220,12 +220,12 @@ export function setupSocketGateway(httpServer) {
     // Disconnect cleanup
     // ----------------------------------------------------
     socket.on('disconnect', async (reason) => {
-      console.log(`[Gateway:${gatewayId}] Client disconnected: ${userId} (${reason})`);
+      console.log(`[Gateway:${gatewayId}] Client disconnected: ${emailId} (${reason})`);
       clearInterval(heartbeatInterval);
       try {
-        await removePresence(userId);
+        await removePresence(emailId);
       } catch (err) {
-        console.error(`[Gateway] Failed to remove presence for ${userId}:`, err.message);
+        console.error(`[Gateway] Failed to remove presence for ${emailId}:`, err.message);
       }
     });
   });

@@ -320,6 +320,7 @@
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
+      flex-shrink: 0;
     }
     .btn-widget:hover { background: var(--primary-hover); }
 
@@ -335,6 +336,7 @@
       justify-content: center;
       cursor: pointer;
       font-size: 0.9rem;
+      flex-shrink: 0;
     }
     .btn-widget-icon:hover { background: #f1f5f9; }
 
@@ -486,6 +488,33 @@
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 480px) {
+      .chat-drawer {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+      }
+      .input-bar-widget {
+        padding: 0.5rem 0.5rem !important;
+        gap: 0.35rem !important;
+      }
+      .input-bar-widget input {
+        padding: 0.5rem 0.6rem !important;
+        font-size: 0.8rem !important;
+      }
+      .btn-widget {
+        padding: 0.45rem 0.65rem !important;
+        font-size: 0.75rem !important;
+        flex-shrink: 0 !important;
+      }
+      .btn-widget-icon {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 0.8rem !important;
+        flex-shrink: 0 !important;
+      }
     }
   `;
   document.head.appendChild(styleEl);
@@ -653,15 +682,15 @@
     socket.on('presence:res', (res) => {
       const presenceIndicator = document.getElementById('presenceIndicator');
       if (presenceIndicator && activeConversation) {
-        const partner = currentUser.role === 'agent' ? activeConversation.userId : activeConversation.agentId;
+        const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
         const currentPartnerId = partner?._id || partner;
-        if (res && res.userId === currentPartnerId) {
+        if (res && res.emailId === currentPartnerId) {
           if (res.isOnline) {
-            presenceIndicator.className = 'presence-online';
-            presenceIndicator.textContent = 'online';
+             presenceIndicator.className = 'presence-online';
+             presenceIndicator.textContent = 'online';
           } else {
-            presenceIndicator.className = 'presence-offline';
-            presenceIndicator.textContent = 'offline';
+             presenceIndicator.className = 'presence-offline';
+             presenceIndicator.textContent = 'offline';
           }
         }
       }
@@ -688,12 +717,12 @@
           const team = seedData.seedData.find(g => g.agent._id === currentUser._id);
           if (team) {
             team.users.forEach(user => {
-              const hasConv = list.some(c => (c.userId?._id === user._id || c.userId === user._id));
+              const hasConv = list.some(c => (c.emailId?._id === user._id || c.emailId === user._id));
               if (!hasConv) {
                 list.push({
                   _id: `conv-${currentUser._id}-${user._id}`,
                   agentId: currentUser._id,
-                  userId: user,
+                  emailId: user,
                   lastMessageAt: new Date(0).toISOString(),
                   unread: { agent: 0, user: 0 },
                   isVirtual: true
@@ -710,7 +739,7 @@
               list.push({
                 _id: `conv-${agent._id}-${currentUser._id}`,
                 agentId: agent,
-                userId: currentUser,
+                emailId: currentUser,
                 lastMessageAt: new Date(0).toISOString(),
                 unread: { agent: 0, user: 0 },
                 isVirtual: true
@@ -727,7 +756,7 @@
 
       if (list.length > 0) {
         list.forEach(conv => {
-          const partner = currentUser.role === 'agent' ? conv.userId : conv.agentId;
+          const partner = currentUser.role === 'agent' ? conv.emailId : conv.agentId;
           const partnerName = partner?.name || partner || 'Partner';
           const initials = getInitials(partnerName);
           const avatarColor = getAvatarColor(partnerName);
@@ -758,7 +787,7 @@
   // Select Conversation
   function selectConversation(conv) {
     activeConversation = conv;
-    const partner = currentUser.role === 'agent' ? conv.userId : conv.agentId;
+    const partner = currentUser.role === 'agent' ? conv.emailId : conv.agentId;
     const partnerName = partner?.name || partner || 'Partner';
     const partnerId = partner?._id || partner;
 
@@ -811,7 +840,7 @@
 
   function checkPresence(targetId) {
     if (!socket || !socket.connected) return;
-    socket.emit('presence:check', { userId: targetId });
+    socket.emit('presence:check', { emailId: targetId });
   }
 
   async function fetchMessages() {
@@ -877,7 +906,7 @@
 
     if (msg._id && msgEl.querySelector(`[data-msg-id="${msg._id}"]`)) return;
 
-    const isOutgoing = msg.senderId === (currentUser._id || currentUser.userId);
+    const isOutgoing = msg.senderId === (currentUser._id || currentUser.emailId);
     const bubble = document.createElement('div');
     bubble.className = `bubble-widget ${isOutgoing ? 'outgoing' : 'incoming'}`;
     if (msg._id) bubble.dataset.msgId = msg._id;
@@ -1045,11 +1074,11 @@
     const text = input.value.trim();
     if (!text || !socket || !socket.connected) return;
 
-    const partner = currentUser.role === 'agent' ? activeConversation.userId : activeConversation.agentId;
+    const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
     const recipientId = partner?._id || partner;
     const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
-    const userId = currentUser.role === 'user' ? currentUser._id : recipientId;
-    const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${userId}`;
+    const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
+    const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${emailId}`;
     const messageId = 'msg-' + Date.now();
 
     if (activeConversation.isVirtual) {
@@ -1163,11 +1192,11 @@
   }
 
   async function uploadWidgetAudioBlob(audioBlob, duration) {
-    const partner = currentUser.role === 'agent' ? activeConversation.userId : activeConversation.agentId;
+    const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
     const recipientId = partner?._id || partner;
     const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
-    const userId = currentUser.role === 'user' ? currentUser._id : recipientId;
-    const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${userId}`;
+    const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
+    const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${emailId}`;
     const messageId = 'msg-voice-' + Date.now();
 
     const input = document.getElementById('widgetMsgInput');
@@ -1262,11 +1291,11 @@
   async function uploadWidgetImage(file) {
     if (!file) return;
 
-    const partner = currentUser.role === 'agent' ? activeConversation.userId : activeConversation.agentId;
+    const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
     const recipientId = partner?._id || partner;
     const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
-    const userId = currentUser.role === 'user' ? currentUser._id : recipientId;
-    const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${userId}`;
+    const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
+    const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${emailId}`;
     const messageId = 'msg-image-' + Date.now();
 
     const input = document.getElementById('widgetMsgInput');
@@ -1388,7 +1417,7 @@
       currentToken = parsed.token;
       currentUser = parsed.user;
       if (currentUser) {
-        currentUser._id = currentUser._id || currentUser.userId;
+        currentUser._id = currentUser._id || currentUser.emailId;
       }
       currentUser.role = parsed.role;
 
@@ -1503,7 +1532,7 @@
   function sendFormMessage(text) {
     if (!socket || !socket.connected || !activeConversation) return;
 
-    const partner = currentUser.role === 'agent' ? activeConversation.userId : activeConversation.agentId;
+    const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
     const recipientId = partner?._id || partner;
     const conversationId = activeConversation._id;
     const messageId = 'msg-' + Date.now();
@@ -1560,7 +1589,7 @@
       currentToken = parsed.token;
       currentUser = parsed.user;
       if (currentUser) {
-        currentUser._id = currentUser._id || currentUser.userId;
+        currentUser._id = currentUser._id || currentUser.emailId;
         currentUser.role = parsed.role;
       }
     } catch (e) {

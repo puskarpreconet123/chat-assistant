@@ -186,7 +186,7 @@
 <div class="absolute inset-0 bg-surface-deep/80 bg-ambient"></div>
 </div>
 <!-- Login Container -->
-<main class="relative z-10 w-full max-w-[480px] px-6 py-12 md:py-0 flex flex-col items-center">
+<main class="relative z-10 w-full max-w-[480px] md:max-w-[520px] transition-all duration-300 px-6 py-12 md:py-0 flex flex-col items-center">
 <!-- Brand -->
 <div class="mb-10 text-center">
 <h1 class="font-display-lg text-display-lg text-primary tracking-tighter">LuxeBet</h1>
@@ -203,10 +203,10 @@
 <form class="space-y-6" onsubmit="handleLogin(event)">
 <!-- Input Group: Username -->
 <div class="space-y-2">
-<label class="block font-label-caps text-label-caps text-text-muted uppercase" for="username">Email or Username</label>
+<label class="block font-label-caps text-label-caps text-text-muted uppercase" for="username">Email Address</label>
 <div class="relative">
 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">person</span>
-<input class="w-full bg-surface-raised border border-transparent rounded-lg py-3 pl-12 pr-4 text-text-primary placeholder-text-muted focus:outline-none input-glow transition-all duration-300" id="username" placeholder="Enter your credentials" type="text" required/>
+<input class="w-full bg-surface-raised border border-transparent rounded-lg py-3 pl-12 pr-4 text-text-primary placeholder-text-muted focus:outline-none input-glow transition-all duration-300" id="username" placeholder="Enter your email address" type="email" required/>
 </div>
 </div>
 <!-- Input Group: Password -->
@@ -224,9 +224,11 @@
 </div>
 </div>
 <!-- Primary CTA -->
-<button id="submitBtn" class="w-full btn-gold-gradient rounded-lg py-3 mt-4 font-headline-lg-mobile text-headline-lg-mobile flex items-center justify-center gap-2" type="submit">
-<span>Login</span>
-<span class="material-symbols-outlined text-[20px]">login</span>
+<button id="submitBtn" class="w-full btn-gold-gradient rounded-lg py-4 px-6 mt-4 font-headline-lg-mobile text-headline-lg-mobile flex justify-center items-center gap-2 relative overflow-hidden group shadow-lg shadow-primary-container/20 hover:shadow-primary-container/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300" type="submit">
+<span class="relative z-10">Login</span>
+<span class="material-symbols-outlined relative z-10 text-[20px]">login</span>
+<!-- Button Hover Glow -->
+<div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
 </button>
 </form>
 <!-- Divider -->
@@ -318,10 +320,10 @@
     e.preventDefault();
     hideError();
 
-    const userId = document.getElementById('username').value.trim();
+    const emailId = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
 
-    if (!userId) return showError('Please enter your Account ID.');
+    if (!emailId) return showError('Please enter your Email Address.');
     if (!password) return showError('Please enter your password.');
 
     const btn = document.getElementById('submitBtn');
@@ -334,18 +336,18 @@
       const res = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ emailId, password })
       });
       const data = await res.json();
 
       if (!res.ok) {
-        showError(data.error || 'Authentication failed. Please verify your Account ID.');
+        showError(data.error || 'Authentication failed. Please verify your Email Address.');
         return;
       }
 
       const user = data.user;
       if (user) {
-        user._id = user._id || user.userId;
+        user._id = user._id || user.emailId;
       }
 
       // Save credentials

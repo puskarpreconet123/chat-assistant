@@ -4,6 +4,8 @@ const UserSchema = new mongoose.Schema(
   {
     _id: { type: String, required: true },
     agentId: { type: String, required: true, ref: 'Agent', index: true },
+    emailId: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
     name: { type: String, required: true },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     createdAt: { type: Date, default: Date.now }

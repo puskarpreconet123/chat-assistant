@@ -3,7 +3,7 @@ import { generatePresignedUploadUrl, generatePresignedDownloadUrl } from '../ser
 export async function getVoiceUploadUrl(req, res) {
   try {
     const { conversationId, mimeType = 'audio/webm' } = req.body;
-    const senderId = req.user.userId;
+    const senderId = req.user.emailId;
 
     if (!conversationId) {
       return res.status(400).json({ error: 'conversationId is required' });

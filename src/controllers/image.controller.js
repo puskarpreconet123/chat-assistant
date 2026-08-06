@@ -3,7 +3,7 @@ import { generatePresignedUploadUrl, generatePresignedDownloadUrl } from '../ser
 export async function getImageUploadUrl(req, res) {
   try {
     const { conversationId, mimeType = 'image/jpeg' } = req.body;
-    const senderId = req.user.userId;
+    const senderId = req.user.emailId;
 
     if (!conversationId) {
       return res.status(400).json({ error: 'conversationId is required' });

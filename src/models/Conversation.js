@@ -4,7 +4,7 @@ const ConversationSchema = new mongoose.Schema(
   {
     _id: { type: String, required: true },
     agentId: { type: String, required: true, ref: 'Agent' },
-    userId: { type: String, required: true, ref: 'User' },
+    emailId: { type: String, required: true, ref: 'User' },
     lastMessageAt: { type: Date, default: Date.now },
     unread: {
       agent: { type: Number, default: 0 },
@@ -15,6 +15,6 @@ const ConversationSchema = new mongoose.Schema(
 );
 
 ConversationSchema.index({ agentId: 1, lastMessageAt: -1 });
-ConversationSchema.index({ agentId: 1, userId: 1 }, { unique: true });
+ConversationSchema.index({ agentId: 1, emailId: 1 }, { unique: true });
 
 export const Conversation = mongoose.model('Conversation', ConversationSchema);

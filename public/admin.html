@@ -319,6 +319,193 @@
     @media(max-width: 768px) {
       #viewRegister { grid-template-columns: 1fr; }
     }
+
+    /* Mobile styles overrides */
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      outline: none;
+      line-height: 1;
+    }
+
+    /* Admin Mobile Drawer & Overlay Styles */
+    .admin-mobile-drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .admin-mobile-drawer-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .admin-mobile-drawer {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      width: 280px;
+      background: var(--bg-card);
+      z-index: 1000;
+      box-shadow: -4px 0 15px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      gap: 1.5rem;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .admin-mobile-drawer.active {
+      transform: translateX(0);
+    }
+
+    .admin-mobile-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .admin-mobile-drawer-title {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 1.1rem;
+    }
+
+    .admin-mobile-drawer-close {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .admin-mobile-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .admin-mobile-nav .tab-btn {
+      color: var(--text-primary) !important;
+      background: none;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      width: 100%;
+      height: auto;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .admin-mobile-nav .tab-btn:hover, .admin-mobile-nav .tab-btn.active {
+      background: var(--primary-light);
+      color: var(--primary) !important;
+      border-color: var(--primary);
+    }
+
+    .admin-mobile-links {
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .admin-mobile-links .btn-header {
+      background: #f0f2f5 !important;
+      color: var(--text-primary) !important;
+      border: 1px solid var(--border-color) !important;
+      text-align: center;
+      padding: 0.75rem 1.1rem;
+      display: block;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .admin-mobile-links .btn-header:hover {
+      background: var(--primary-light) !important;
+      color: var(--primary) !important;
+      border-color: var(--primary) !important;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: 0 1rem;
+      }
+
+      .tabs-nav, .header-links {
+        display: none;
+      }
+
+      .mobile-menu-btn {
+        display: block;
+      }
+
+      .main-container {
+        margin: 1rem auto;
+        padding: 0 0.75rem;
+      }
+
+      .panel-card {
+        padding: 1.25rem;
+        border-radius: 8px;
+      }
+
+      .panel-title-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .bulk-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        padding: 1rem;
+      }
+
+      .bulk-bar span {
+        margin-bottom: 0.25rem;
+      }
+
+      .bulk-bar div {
+        width: 100%;
+      }
+
+      .bulk-bar button {
+        width: 100%;
+      }
+
+      .data-table-container {
+        -webkit-overflow-scrolling: touch;
+        margin-top: 0.5rem;
+      }
+      
+      .action-group {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+    }
   </style>
 </head>
 <body>
@@ -341,7 +528,29 @@
       <a href="/chat.html" class="btn-header" style="margin-right: 0.5rem;">💬 Chat Portal</a>
       <a href="/" class="btn-header" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15);">🏠 Casino Lobby</a>
     </div>
+
+    <button class="mobile-menu-btn" onclick="toggleAdminMobileDrawer(true)">
+      <span>☰</span>
+    </button>
   </header>
+
+  <!-- Admin Mobile Drawer -->
+  <div id="adminMobileDrawerOverlay" class="admin-mobile-drawer-overlay" onclick="toggleAdminMobileDrawer(false)"></div>
+  <div id="adminMobileDrawer" class="admin-mobile-drawer">
+    <div class="admin-mobile-drawer-header">
+      <span class="admin-mobile-drawer-title">⚙️ Admin Menu</span>
+      <button class="admin-mobile-drawer-close" onclick="toggleAdminMobileDrawer(false)">✕</button>
+    </div>
+    <div class="admin-mobile-nav">
+      <button id="mobTabBtnUsers" class="tab-btn active" onclick="switchAdminTab('users')">👤 Manage Users</button>
+      <button id="mobTabBtnAgents" class="tab-btn" onclick="switchAdminTab('agents')">👥 Manage Agents</button>
+      <button id="mobTabBtnRegister" class="tab-btn" onclick="switchAdminTab('register')">➕ Register New</button>
+    </div>
+    <div class="admin-mobile-links">
+      <a href="/chat.html" class="btn-header">💬 Chat Portal</a>
+      <a href="/" class="btn-header">🏠 Casino Lobby</a>
+    </div>
+  </div>
 
   <div class="main-container">
     
@@ -435,6 +644,14 @@
             <input type="text" id="agentIdInput" placeholder="e.g. agent-diana (leaves empty to auto-generate)" />
           </div>
           <div class="form-group">
+            <label for="agentEmailIdInput">Email ID (Optional)</label>
+            <input type="text" id="agentEmailIdInput" placeholder="e.g. diana@luxebet.com" />
+          </div>
+          <div class="form-group">
+            <label for="agentPasswordInput">Password (Optional)</label>
+            <input type="password" id="agentPasswordInput" placeholder="Default: password123" />
+          </div>
+          <div class="form-group">
             <label for="agentNameInput">Agent Name</label>
             <input type="text" id="agentNameInput" placeholder="e.g. Agent Diana" required />
           </div>
@@ -449,8 +666,12 @@
         </div>
         <form id="formUser" style="display: flex; flex-direction: column; flex: 1;">
           <div class="form-group">
-            <label for="userIdInput">User ID (Optional)</label>
-            <input type="text" id="userIdInput" placeholder="e.g. user-diana-1 (leaves empty to auto-generate)" />
+            <label for="emailIdInput">Email ID (Optional)</label>
+            <input type="text" id="emailIdInput" placeholder="e.g. diana-1@example.com (leaves empty to auto-generate)" />
+          </div>
+          <div class="form-group">
+            <label for="userPasswordInput">Password (Optional)</label>
+            <input type="password" id="userPasswordInput" placeholder="Default: password123" />
           </div>
           <div class="form-group">
             <label for="userNameInput">User Name</label>
@@ -473,12 +694,15 @@
   <script>
     const formAgent = document.getElementById('formAgent');
     const agentIdInput = document.getElementById('agentIdInput');
+    const agentEmailIdInput = document.getElementById('agentEmailIdInput');
+    const agentPasswordInput = document.getElementById('agentPasswordInput');
     const agentNameInput = document.getElementById('agentNameInput');
     const agentTableBody = document.getElementById('agentTableBody');
     const agentCountText = document.getElementById('agentCountText');
 
     const formUser = document.getElementById('formUser');
-    const userIdInput = document.getElementById('userIdInput');
+    const emailIdInput = document.getElementById('emailIdInput');
+    const userPasswordInput = document.getElementById('userPasswordInput');
     const userNameInput = document.getElementById('userNameInput');
     const userAgentSelect = document.getElementById('userAgentSelect');
     const bulkAgentSelect = document.getElementById('bulkAgentSelect');
@@ -486,14 +710,29 @@
     const userTableBody = document.getElementById('userTableBody');
     const userCountText = document.getElementById('userCountText');
 
+    // Toggle Mobile Drawer
+    function toggleAdminMobileDrawer(open) {
+      const drawer = document.getElementById('adminMobileDrawer');
+      const overlay = document.getElementById('adminMobileDrawerOverlay');
+      if (open) {
+        drawer.classList.add('active');
+        overlay.classList.add('active');
+      } else {
+        drawer.classList.remove('active');
+        overlay.classList.remove('active');
+      }
+    }
+
     // On Load
     window.addEventListener('load', () => {
       refreshData();
       // Position tab slider
       const usersBtn = document.getElementById('tabBtnUsers');
       const slider = document.querySelector('.tabs-slider');
-      slider.style.left = usersBtn.offsetLeft + 'px';
-      slider.style.width = usersBtn.offsetWidth + 'px';
+      if (usersBtn && usersBtn.offsetWidth > 0) {
+        slider.style.left = usersBtn.offsetLeft + 'px';
+        slider.style.width = usersBtn.offsetWidth + 'px';
+      }
     });
 
     async function refreshData() {
@@ -506,6 +745,10 @@
       const agentsBtn = document.getElementById('tabBtnAgents');
       const registerBtn = document.getElementById('tabBtnRegister');
       const slider = document.querySelector('.tabs-slider');
+
+      const mobUsersBtn = document.getElementById('mobTabBtnUsers');
+      const mobAgentsBtn = document.getElementById('mobTabBtnAgents');
+      const mobRegisterBtn = document.getElementById('mobTabBtnRegister');
       
       const viewUsers = document.getElementById('viewUsers');
       const viewAgents = document.getElementById('viewAgents');
@@ -519,12 +762,24 @@
       agentsBtn.classList.remove('active');
       registerBtn.classList.remove('active');
 
+      if (mobUsersBtn) mobUsersBtn.classList.remove('active');
+      if (mobAgentsBtn) mobAgentsBtn.classList.remove('active');
+      if (mobRegisterBtn) mobRegisterBtn.classList.remove('active');
+
       const activeBtn = tabName === 'users' ? usersBtn : (tabName === 'agents' ? agentsBtn : registerBtn);
       activeBtn.classList.add('active');
 
+      const mobActiveBtn = tabName === 'users' ? mobUsersBtn : (tabName === 'agents' ? mobAgentsBtn : mobRegisterBtn);
+      if (mobActiveBtn) mobActiveBtn.classList.add('active');
+
+      // Close mobile drawer on tab switch
+      toggleAdminMobileDrawer(false);
+
       // Align slider indicator
-      slider.style.left = activeBtn.offsetLeft + 'px';
-      slider.style.width = activeBtn.offsetWidth + 'px';
+      if (activeBtn && activeBtn.offsetWidth > 0) {
+        slider.style.left = activeBtn.offsetLeft + 'px';
+        slider.style.width = activeBtn.offsetWidth + 'px';
+      }
 
       if (tabName === 'users') {
         viewUsers.style.display = 'block';
@@ -680,7 +935,7 @@
         const res = await fetch('/api/v1/admin/users/assign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userIds, agentId })
+          body: JSON.stringify({ emailIds: userIds, agentId })
         });
         const result = await res.json();
 
@@ -712,7 +967,7 @@
         const res = await fetch('/api/v1/admin/users', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userIds })
+          body: JSON.stringify({ emailIds: userIds })
         });
         const result = await res.json();
 
@@ -728,7 +983,7 @@
     }
 
     // Delete single user
-    async function deleteSingleUser(userId, userName) {
+    async function deleteSingleUser(emailId, userName) {
       if (!confirm(`Are you sure you want to permanently delete user "${userName}"? This will delete all their conversations and message histories.`)) {
         return;
       }
@@ -737,7 +992,7 @@
         const res = await fetch('/api/v1/admin/users', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userIds: [userId] })
+          body: JSON.stringify({ emailIds: [emailId] })
         });
         const result = await res.json();
 
@@ -756,18 +1011,22 @@
     formAgent.addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = agentIdInput.value.trim();
+      const emailId = agentEmailIdInput.value.trim();
+      const password = agentPasswordInput.value;
       const name = agentNameInput.value.trim();
 
       try {
         const res = await fetch('/api/v1/admin/agents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, name })
+          body: JSON.stringify({ id, name, emailId, password })
         });
         const result = await res.json();
         
         if (res.ok) {
           agentIdInput.value = '';
+          agentEmailIdInput.value = '';
+          agentPasswordInput.value = '';
           agentNameInput.value = '';
           alert(`Agent "${result.agent.name}" created successfully!`);
           refreshData();
@@ -783,7 +1042,8 @@
     // Create User Submit
     formUser.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const id = userIdInput.value.trim();
+      const id = emailIdInput.value.trim();
+      const password = userPasswordInput.value;
       const name = userNameInput.value.trim();
       const agentId = userAgentSelect.value;
 
@@ -791,12 +1051,13 @@
         const res = await fetch('/api/v1/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, name, agentId })
+          body: JSON.stringify({ id, emailId: id, name, agentId, password })
         });
         const result = await res.json();
 
         if (res.ok) {
-          userIdInput.value = '';
+          emailIdInput.value = '';
+          userPasswordInput.value = '';
           userNameInput.value = '';
           userAgentSelect.value = '';
           alert(`User "${result.user.name}" created and assigned successfully!`);
@@ -811,12 +1072,12 @@
     });
 
     // Open Chat Portal helper
-    async function openChat(userId, role, name, openNewWindow = false) {
+    async function openChat(emailId, role, name, openNewWindow = false) {
       try {
         const res = await fetch('/api/v1/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, role, name })
+          body: JSON.stringify({ emailId, role, name })
         });
         const authData = await res.json();
 

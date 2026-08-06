@@ -55,16 +55,29 @@ async function runTests() {
     // TEST 1: Seed Agent and User
     // ----------------------------------------------------
     console.log('\n[Test 1] Seeding Agent and User...');
-    await Agent.create({ _id: TEST_AGENT_ID, name: 'Agent Smith', status: 'active' });
-    await User.create({ _id: TEST_USER_ID, agentId: TEST_AGENT_ID, name: 'Alice', status: 'active' });
+    await Agent.create({ 
+      _id: TEST_AGENT_ID, 
+      emailId: 'agent-test-1@luxebet.com', 
+      password: 'password123', 
+      name: 'Agent Smith', 
+      status: 'active' 
+    });
+    await User.create({ 
+      _id: TEST_USER_ID, 
+      agentId: TEST_AGENT_ID, 
+      emailId: 'user-test-1@example.com', 
+      password: 'password123', 
+      name: 'Alice', 
+      status: 'active' 
+    });
     console.log('✔ Agent and User created in MongoDB');
 
     // ----------------------------------------------------
     // TEST 2: Generate JWT Tokens
     // ----------------------------------------------------
     console.log('\n[Test 2] Generating JWT auth tokens...');
-    const agentToken = generateToken({ userId: TEST_AGENT_ID, role: 'agent', agentId: TEST_AGENT_ID, name: 'Agent Smith' });
-    const userToken = generateToken({ userId: TEST_USER_ID, role: 'user', agentId: TEST_AGENT_ID, name: 'Alice' });
+    const agentToken = generateToken({ emailId: TEST_AGENT_ID, role: 'agent', agentId: TEST_AGENT_ID, name: 'Agent Smith' });
+    const userToken = generateToken({ emailId: TEST_USER_ID, role: 'user', agentId: TEST_AGENT_ID, name: 'Alice' });
     assert(agentToken && userToken, 'Tokens should be generated');
     console.log('✔ Agent & User tokens generated successfully');
 
@@ -154,7 +167,7 @@ async function runTests() {
       text: 'Hello Agent Smith!',
       createdAt: new Date(),
       agentId: TEST_AGENT_ID,
-      userId: TEST_USER_ID,
+      emailId: TEST_USER_ID,
       recipientId: TEST_AGENT_ID,
       recipientType: 'agent'
     });
@@ -233,7 +246,7 @@ async function runTests() {
       },
       createdAt: new Date(),
       agentId: TEST_AGENT_ID,
-      userId: TEST_USER_ID,
+      emailId: TEST_USER_ID,
       recipientId: TEST_AGENT_ID,
       recipientType: 'agent'
     });
@@ -301,7 +314,7 @@ async function runTests() {
       text: 'Auto read this message!',
       createdAt: new Date(),
       agentId: TEST_AGENT_ID,
-      userId: TEST_USER_ID,
+      emailId: TEST_USER_ID,
       recipientId: TEST_AGENT_ID,
       recipientType: 'agent'
     });
@@ -350,7 +363,7 @@ async function runTests() {
       },
       createdAt: new Date(),
       agentId: TEST_AGENT_ID,
-      userId: TEST_USER_ID,
+      emailId: TEST_USER_ID,
       recipientId: TEST_AGENT_ID,
       recipientType: 'agent'
     });

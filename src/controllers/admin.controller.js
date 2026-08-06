@@ -6,19 +6,28 @@ import { generateToken } from '../services/auth.service.js';
 
 export async function createAgent(req, res) {
   try {
-    const { id, name } = req.body;
+    const { id, name, emailId, password } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Agent name is required' });
     }
     const agentId = id ? id.trim() : `agent-${Math.random().toString(36).substring(2, 10)}`;
+    const finalEmailId = emailId ? emailId.trim() : (agentId.includes('@') ? agentId : `${agentId}@example.com`);
+    const finalPassword = password || 'password123';
+
     const agent = await Agent.findByIdAndUpdate(
       agentId,
-      { name: name.trim(), status: 'active', createdAt: new Date() },
+      { 
+        emailId: finalEmailId,
+        password: finalPassword,
+        name: name.trim(), 
+        status: 'active', 
+        createdAt: new Date() 
+      },
       { upsert: true, new: true }
     );
     
     const token = generateToken({
-      userId: agent._id,
+      emailId: agent._id,
       role: 'agent',
       agentId: agent._id,
       name: agent.name
@@ -39,7 +48,7 @@ export async function createAgent(req, res) {
 
 export async function createUser(req, res) {
   try {
-    const { id, name, agentId } = req.body;
+    const { id, name, agentId, emailId, password } = req.body;
     if (!name || !agentId) {
       return res.status(400).json({ error: 'User name and agentId are required' });
     }
@@ -51,14 +60,24 @@ export async function createUser(req, res) {
     }
 
     const userId = id ? id.trim() : `user-${Math.random().toString(36).substring(2, 10)}`;
+    const finalEmailId = emailId ? emailId.trim() : (userId.includes('@') ? userId : `${userId}@example.com`);
+    const finalPassword = password || 'password123';
+
     const user = await User.findByIdAndUpdate(
       userId,
-      { agentId, name: name.trim(), status: 'active', createdAt: new Date() },
+      { 
+        agentId, 
+        emailId: finalEmailId,
+        password: finalPassword,
+        name: name.trim(), 
+        status: 'active', 
+        createdAt: new Date() 
+      },
       { upsert: true, new: true }
     );
 
     const token = generateToken({
-      userId: user._id,
+      emailId: user._id,
       role: 'user',
       agentId,
       name: user.name
@@ -97,9 +116,9 @@ export async function listUsers(req, res) {
 
 export async function assignUsers(req, res) {
   try {
-    const { userIds, agentId } = req.body;
-    if (!Array.isArray(userIds) || userIds.length === 0 || !agentId) {
-      return res.status(400).json({ error: 'userIds array and agentId are required' });
+    const { emailIds, agentId } = req.body;
+    if (!Array.isArray(emailIds) || emailIds.length === 0 || !agentId) {
+      return res.status(400).json({ error: 'emailIds array and agentId are required' });
     }
 
     // Verify agent exists
@@ -110,7 +129,7 @@ export async function assignUsers(req, res) {
 
     // Update all users
     const result = await User.updateMany(
-      { _id: { $in: userIds } },
+      { _id: { $in: emailIds } },
       { $set: { agentId } }
     );
 
@@ -125,13 +144,13 @@ export async function assignUsers(req, res) {
 
 export async function deleteUsers(req, res) {
   try {
-    const { userIds } = req.body;
-    if (!Array.isArray(userIds) || userIds.length === 0) {
-      return res.status(400).json({ error: 'userIds array is required' });
+    const { emailIds } = req.body;
+    if (!Array.isArray(emailIds) || emailIds.length === 0) {
+      return res.status(400).json({ error: 'emailIds array is required' });
     }
 
     // Delete conversations first
-    const conversations = await Conversation.find({ userId: { $in: userIds } });
+    const conversations = await Conversation.find({ emailId: { $in: emailIds } });
     const conversationIds = conversations.map(c => c._id);
 
     // Delete messages
@@ -140,10 +159,10 @@ export async function deleteUsers(req, res) {
     }
 
     // Delete conversations
-    await Conversation.deleteMany({ userId: { $in: userIds } });
+    await Conversation.deleteMany({ emailId: { $in: emailIds } });
 
     // Delete users
-    const result = await User.deleteMany({ _id: { $in: userIds } });
+    const result = await User.deleteMany({ _id: { $in: emailIds } });
 
     return res.json({
       message: `Successfully deleted ${result.deletedCount} users, their conversations, and messages.`,

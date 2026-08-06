@@ -191,7 +191,7 @@
 </header>
 <!-- Main Content: Signup Form -->
 <main class="flex-grow flex items-center justify-center p-4 z-10 relative">
-<div class="w-full max-w-max-width md:max-w-[480px]">
+<div class="w-full max-w-[480px] md:max-w-[640px] lg:max-w-[720px] transition-all duration-300">
 <div class="glass-panel rounded-xl p-8 md:p-10 w-full relative overflow-hidden">
 <!-- Subtle internal top highlight -->
 <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
@@ -201,20 +201,13 @@
 </div>
 <div id="errorMsg" class="hidden text-error bg-error-container/10 border border-error-container/20 text-sm rounded-lg p-3 text-center mb-4" style="color: #ffb4ab; background: rgba(147, 0, 10, 0.1); border: 1px solid rgba(147, 0, 10, 0.2);"></div>
 <form class="space-y-6" onsubmit="handleSignup(event)">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 <!-- Full Name -->
 <div class="space-y-2">
 <label class="block font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider" for="fullName">Full Name</label>
 <div class="relative input-glow rounded-lg transition-all duration-300">
 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">person</span>
 <input class="w-full bg-surface-raised border border-transparent rounded-lg py-3 pl-12 pr-4 text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-0 transition-colors font-body-md text-body-md" id="fullName" placeholder="John Doe" type="text" required/>
-</div>
-</div>
-<!-- Account ID (Username) -->
-<div class="space-y-2">
-<label class="block font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider" for="accountId">Account ID (Username)</label>
-<div class="relative input-glow rounded-lg transition-all duration-300">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">account_circle</span>
-<input class="w-full bg-surface-raised border border-transparent rounded-lg py-3 pl-12 pr-4 text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-0 transition-colors font-body-md text-body-md" id="accountId" placeholder="e.g. user-alice-4" type="text" required/>
 </div>
 </div>
 <!-- Email -->
@@ -244,6 +237,7 @@
 </button>
 </div>
 </div>
+</div>
 <!-- Terms Checkbox -->
 <div class="flex items-start gap-3 pt-2">
 <div class="flex items-center h-6">
@@ -266,7 +260,7 @@
 <div class="mt-8 text-center">
 <p class="font-body-md text-body-md text-text-muted">
                         Already have an account? 
-                        <a class="text-primary font-bold hover:text-primary-fixed transition-colors underline decoration-transparent hover:decoration-primary/50 underline-offset-4 ml-1" href="login.html">Login</a>
+                        <a class="text-primary hover:text-secondary font-bold transition-colors" href="login.html">Login</a>
 </p>
 </div>
 </div>
@@ -351,14 +345,12 @@
         hideError();
 
         const name = document.getElementById('fullName').value.trim();
-        const id = document.getElementById('accountId').value.trim();
         const email = document.getElementById('email').value.trim();
         const phone = document.getElementById('phone').value.trim();
         const password = document.getElementById('password').value;
         const terms = document.getElementById('terms').checked;
 
         if (!name) return showError('Full Name is required.');
-        if (!id) return showError('Account ID (Username) is required.');
         if (!email) return showError('Email address is required.');
         if (!phone) return showError('Phone Number is required.');
         if (!password || password.length < 3) return showError('Password must be at least 3 characters.');
@@ -374,18 +366,18 @@
             const res = await fetch('/api/v1/admin/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, name, agentId })
+                body: JSON.stringify({ id: email, emailId: email, name, agentId, password })
             });
             const data = await res.json();
 
             if (!res.ok) {
-                showError(data.error || 'Failed to create account. Username might already be taken.');
+                showError(data.error || 'Failed to create account. Email address might already be taken.');
                 return;
             }
 
             const user = data.user;
             if (user) {
-                user._id = user._id || user.userId;
+                user._id = user._id || user.emailId;
                 user.role = 'user';
             }
 

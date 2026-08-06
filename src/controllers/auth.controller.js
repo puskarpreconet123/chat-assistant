@@ -5,38 +5,61 @@ import { User } from '../models/User.js';
 
 export async function login(req, res) {
   try {
-    const { userId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+    const { emailId, password } = req.body;
+    if (!emailId) {
+      return res.status(400).json({ error: 'emailId is required' });
     }
 
     let role = 'user';
     let agentId = null;
     let name = req.body.name;
+    let foundId = emailId;
 
-    // Check if the ID belongs to an Agent
-    const agent = await Agent.findById(userId);
+    // Check if the ID belongs to an Agent (either by _id or emailId)
+    const agent = await Agent.findOne({ $or: [{ _id: emailId }, { emailId }] });
     if (agent) {
+      // Verify password if it is sent (Standard login page flow).
+      // If password is not sent but role/name is provided, it is an admin bypass impersonation flow.
+      if (password !== undefined) {
+        if (!agent.password || agent.password !== password) {
+          return res.status(401).json({ error: 'Invalid password' });
+        }
+      } else if (!req.body.role) {
+        return res.status(400).json({ error: 'Password is required' });
+      }
+
       role = 'agent';
       agentId = agent._id;
+      foundId = agent._id;
       if (!name) name = agent.name;
     } else {
-      // Check if it belongs to a User
-      const user = await User.findById(userId);
+      // Check if it belongs to a User (either by _id or emailId)
+      const user = await User.findOne({ $or: [{ _id: emailId }, { emailId }] });
       if (user) {
+        // Verify password if it is sent (Standard login page flow).
+        // If password is not sent but role/name is provided, it is an admin bypass impersonation flow.
+        if (password !== undefined) {
+          if (!user.password || user.password !== password) {
+            return res.status(401).json({ error: 'Invalid password' });
+          }
+        } else if (!req.body.role) {
+          return res.status(400).json({ error: 'Password is required' });
+        }
+
         role = 'user';
         agentId = user.agentId;
+        foundId = user._id;
         if (!name) name = user.name;
       } else {
-        return res.status(400).json({ error: `Account with ID "${userId}" not found in database.` });
+        return res.status(400).json({ error: `Account with Email ID "${emailId}" not found in database.` });
       }
     }
 
     const token = generateToken({
-      userId,
+      emailId: foundId,
       role,
       agentId,
-      name: name || `${role}_${userId}`
+      name: name || `${role}_${foundId}`
     });
 
     // Set token in cookie for server-side page routing
@@ -49,11 +72,11 @@ export async function login(req, res) {
     return res.json({
       token,
       user: {
-        _id: userId,
-        userId,
+        _id: foundId,
+        emailId: foundId,
         role,
         agentId,
-        name: name || `${role}_${userId}`
+        name: name || `${role}_${foundId}`
       }
     });
   } catch (err) {
@@ -98,15 +121,22 @@ export async function seed(req, res) {
     const seedDataResult = [];
 
     for (const ad of demoData) {
+      const agentEmail = `${ad.id.replace('agent-', '')}@luxebet.com`;
       const agent = await Agent.findByIdAndUpdate(
         ad.id,
-        { name: ad.name, status: 'active', createdAt: new Date() },
+        { 
+          emailId: agentEmail,
+          password: 'password123',
+          name: ad.name, 
+          status: 'active', 
+          createdAt: new Date() 
+        },
         { upsert: true, new: true }
       );
       seededAgents.push(agent);
 
       const agentToken = generateToken({
-        userId: agent._id,
+        emailId: agent._id,
         role: 'agent',
         agentId: agent._id,
         name: agent.name
@@ -116,23 +146,31 @@ export async function seed(req, res) {
       const tokensForAgent = [];
 
       for (const ud of ad.users) {
+        const userEmail = `${ud.id.replace('user-', '')}@example.com`;
         const user = await User.findByIdAndUpdate(
           ud.id,
-          { agentId: agent._id, name: ud.name, status: 'active', createdAt: new Date() },
+          { 
+            agentId: agent._id, 
+            emailId: userEmail,
+            password: 'password123',
+            name: ud.name, 
+            status: 'active', 
+            createdAt: new Date() 
+          },
           { upsert: true, new: true }
         );
         usersForAgent.push(user);
         seededUsers.push(user);
 
         const token = generateToken({
-          userId: user._id,
+          emailId: user._id,
           role: 'user',
           agentId: agent._id,
           name: user.name
         });
 
         tokensForAgent.push({
-          userId: user._id,
+          emailId: user._id,
           token,
           name: user.name
         });
