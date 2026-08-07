@@ -15,14 +15,17 @@ function get12HourTime(d = new Date()) {
 function wrapUser(row) {
   if (!row) return null;
   
+  const avatarVal = (row.img && row.img !== 'null' && row.img !== 'undefined') ? row.img : '';
   const userObj = {
     ...row,
     _id: row.email,
     emailId: row.email,
+    avatar: avatarVal,
     agentId: row.resolved_agency_unq_id || '', // populate agentId with resolved agency unique ID (e.g. AGENCY-23)
     status: row.show_status && row.show_status.toUpperCase() === 'ACTIVE' ? 'active' : 'inactive'
   };
 
+  
   Object.defineProperty(userObj, 'save', {
     enumerable: false,
     value: async function () {
@@ -156,9 +159,9 @@ export const User = {
       if (existing.length > 0) {
         await pool.query(
           `UPDATE users SET 
-            name = ?, mob = ?, password = ?, agency_id = ?, agency_unq_id = ?, show_status = ?, type = ?
+            name = ?, mob = ?, password = ?, img = ?, agency_id = ?, agency_unq_id = ?, show_status = ?, type = ?
            WHERE id = ?`,
-          [name, mob, password, agencyId, agencyUnqId, showStatus, type, existing[0].id]
+          [name, mob, password, updateData.img || '', agencyId, agencyUnqId, showStatus, type, existing[0].id]
         );
       } else {
         await pool.query(

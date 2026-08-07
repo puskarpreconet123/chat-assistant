@@ -13,8 +13,8 @@ export function socketAuthMiddleware(socket, next) {
     const decoded = verifyToken(token);
     socket.data.user = {
       emailId: decoded.emailId || decoded.id,
-      role: decoded.role || 'user', // 'agent' | 'user'
-      agentId: decoded.agentId || (decoded.role === 'agent' ? (decoded.emailId || decoded.id) : null),
+      role: decoded.role || 'user',
+      agentId: decoded.agentId || ((decoded.role === 'agent' || decoded.role === 'admin') ? (decoded.emailId || decoded.id) : null),
       name: decoded.name
     };
 

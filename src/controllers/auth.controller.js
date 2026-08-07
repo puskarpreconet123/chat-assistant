@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { generateToken } from '../services/auth.service.js';
+import { generateToken, verifyToken } from '../services/auth.service.js';
 import { Agent } from '../models/Agent.js';
 import { User } from '../models/User.js';
 
@@ -15,43 +15,143 @@ export async function login(req, res) {
     let name = req.body.name;
     let foundId = emailId;
 
-    // Check if the ID belongs to an Agent (either by _id or emailId)
-    const agent = await Agent.findOne({ $or: [{ _id: emailId }, { emailId }] });
-    if (agent) {
-      // Verify password if it is sent (Standard login page flow).
-      // If password is not sent but role/name is provided, it is an admin bypass impersonation flow.
-      if (password !== undefined) {
-        if (!agent.password || agent.password !== password) {
-          return res.status(401).json({ error: 'Invalid password' });
+    // 1. Check if this is an admin bypass impersonation flow (no password, but role & name provided)
+    if (password === undefined && req.body.role) {
+      // Security Check: Verify that the caller is authenticated as an Agent/Admin
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Authorization header with Bearer token required for password bypass' });
+      }
+
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = verifyToken(token);
+        if (decoded.role !== 'agent' && decoded.role !== 'admin') {
+          return res.status(403).json({ error: 'Access denied: Only agents/admins can perform impersonation' });
         }
-      } else if (!req.body.role) {
+      } catch (err) {
+        return res.status(401).json({ error: 'Invalid token: ' + err.message });
+      }
+
+      const agent = await Agent.findOne({ $or: [{ _id: emailId }, { emailId }] });
+      if (agent) {
+        role = 'agent';
+        agentId = agent._id;
+        foundId = agent._id;
+        if (!name) name = agent.name;
+      } else {
+        const user = await User.findOne({ $or: [{ _id: emailId }, { emailId }] });
+        if (user) {
+          role = 'user';
+          agentId = user.agentId;
+          foundId = user._id;
+          if (!name) name = user.name;
+        } else {
+          return res.status(400).json({ error: `Account with Email ID "${emailId}" not found in database.` });
+        }
+      }
+    } else {
+      // 2. Normal login flow (requires password)
+      if (password === undefined) {
         return res.status(400).json({ error: 'Password is required' });
       }
 
-      role = 'agent';
-      agentId = agent._id;
-      foundId = agent._id;
-      if (!name) name = agent.name;
-    } else {
-      // Check if it belongs to a User (either by _id or emailId)
-      const user = await User.findOne({ $or: [{ _id: emailId }, { emailId }] });
-      if (user) {
-        // Verify password if it is sent (Standard login page flow).
-        // If password is not sent but role/name is provided, it is an admin bypass impersonation flow.
-        if (password !== undefined) {
-          if (!user.password || user.password !== password) {
-            return res.status(401).json({ error: 'Invalid password' });
-          }
-        } else if (!req.body.role) {
-          return res.status(400).json({ error: 'Password is required' });
+      let remoteSuccess = false;
+      let remoteData = null;
+      let remoteStatus = 200;
+
+      try {
+        const remoteRes = await fetch('https://telewiz.in/officemanage/api.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'login',
+            email: emailId,
+            password: password
+          })
+        });
+        remoteStatus = remoteRes.status;
+        remoteData = await remoteRes.json();
+        if (remoteRes.ok && remoteData && remoteData.success) {
+          remoteSuccess = true;
+        }
+      } catch (err) {
+        console.error('[Auth API] External API connection failed:', err.message);
+      }
+
+      if (remoteSuccess && remoteData && remoteData.user) {
+        const remoteUser = remoteData.user;
+        const remoteRole = String(remoteUser.role || '').toUpperCase();
+        if (remoteRole === 'AGENCY') {
+          role = 'agent';
+        } else if (remoteRole === 'ADMIN') {
+          role = 'admin';
+        } else {
+          role = 'user';
         }
 
-        role = 'user';
-        agentId = user.agentId;
-        foundId = user._id;
-        if (!name) name = user.name;
+        const email = remoteUser.email || emailId;
+        const rawAvatar = remoteUser.avatar || remoteData.avatar || '';
+        const avatar = (rawAvatar && rawAvatar !== 'null' && rawAvatar !== 'undefined') ? rawAvatar : '';
+        const mob = remoteUser.mob || remoteUser.mobile || remoteUser.phone || '';
+        const displayName = remoteUser.name || name || email;
+
+        if (role === 'agent' || role === 'admin') {
+          const agencyUnqId = remoteUser.agency_unq_id || remoteUser.id || email;
+          foundId = agencyUnqId;
+          agentId = agencyUnqId;
+          name = displayName;
+
+          await Agent.findByIdAndUpdate(
+            agencyUnqId,
+            {
+              emailId: email,
+              password: password,
+              name: displayName,
+              img: avatar,
+              mob: mob,
+              status: 'active'
+            },
+            { upsert: true }
+          );
+        } else {
+          // It's a player/user
+          foundId = email;
+          const userAgencyId = remoteUser.agency_id || '';
+          const userAgencyUnqId = remoteUser.agency_unq_id || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
+          agentId = userAgencyUnqId;
+          name = displayName;
+
+          await User.findByIdAndUpdate(
+            email,
+            {
+              emailId: email,
+              password: password,
+              name: displayName,
+              img: avatar,
+              mob: mob,
+              agency_id: userAgencyId,
+              agency_unq_id: userAgencyUnqId,
+              status: 'active'
+            },
+            { upsert: true }
+          );
+        }
       } else {
-        return res.status(400).json({ error: `Account with Email ID "${emailId}" not found in database.` });
+        // If account is suspended or inactive on remote API, block login immediately
+        if (remoteStatus === 403) {
+          return res.status(403).json({ error: (remoteData && remoteData.message) || 'Account is suspended or inactive.' });
+        }
+
+        // If API data is incomplete, return 400 immediately
+        if (remoteStatus === 400) {
+          return res.status(400).json({ error: (remoteData && remoteData.message) || 'Incomplete data. Please provide email/mobile and password.' });
+        }
+
+        // If remote validation failed, return the remote API's error response immediately
+        const errMsg = (remoteData && remoteData.message) || 'Invalid email/mobile or password.';
+        const errStatus = remoteStatus === 404 ? 401 : (remoteStatus || 401);
+        return res.status(errStatus).json({ error: errMsg });
       }
     }
 
@@ -69,14 +169,29 @@ export async function login(req, res) {
       path: '/'
     });
 
+     let dbUser = null;
+    if (role === 'agent' || role === 'admin') {
+      dbUser = await Agent.findOne({ $or: [{ _id: foundId }, { emailId: foundId }] });
+    } else {
+      dbUser = await User.findOne({ $or: [{ _id: foundId }, { emailId: foundId }] });
+    }
+
+    const actualEmail = dbUser ? dbUser.emailId : (emailId || foundId);
+    const actualMob = dbUser ? (dbUser.mob || dbUser.mobile || '') : '';
+    const actualAvatar = dbUser ? (dbUser.avatar || '') : '';
+    const actualName = dbUser ? (dbUser.name || name) : (name || `${role}_${foundId}`);
+
     return res.json({
       token,
+      avatar: actualAvatar,
       user: {
         _id: foundId,
-        emailId: foundId,
+        emailId: actualEmail,
+        mob: actualMob,
         role,
         agentId,
-        name: name || `${role}_${foundId}`
+        name: actualName,
+        avatar: actualAvatar
       }
     });
   } catch (err) {

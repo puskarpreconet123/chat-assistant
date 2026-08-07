@@ -2,11 +2,13 @@ import { pool } from '../config/mysql.js';
 
 function wrapAgent(row) {
   if (!row) return null;
+  const avatarVal = (row.img && row.img !== 'null' && row.img !== 'undefined') ? row.img : '';
   const agentObj = {
     ...row,
     _id: row.agency_unq_id || row.email,
     emailId: row.email,
     name: row.name,
+    avatar: avatarVal,
     status: row.show_status && row.show_status.toLowerCase() === 'active' ? 'active' : 'inactive'
   };
 
@@ -97,6 +99,8 @@ export const Agent = {
     const emailId = updateData.emailId || id;
     const password = updateData.password;
     const name = updateData.name;
+    const img = updateData.img || updateData.avatar || '';
+    const mob = updateData.mob || updateData.mobile || updateData.phone || '';
     const status = updateData.status || 'ACTIVE';
     
     const now = new Date();
@@ -107,8 +111,8 @@ export const Agent = {
       const [existing] = await pool.query("SELECT * FROM users WHERE (email = ? OR agency_unq_id = ? OR id = ?) LIMIT 1", [id, id, id]);
       if (existing.length > 0) {
         await pool.query(
-          `UPDATE users SET name = ?, password = ?, show_status = ? WHERE id = ?`,
-          [name, password, status === 'active' ? 'ACTIVE' : 'INACTIVE', existing[0].id]
+          `UPDATE users SET name = ?, password = ?, show_status = ?, img = ?, mob = ? WHERE id = ?`,
+          [name, password, status === 'active' ? 'ACTIVE' : 'INACTIVE', img, mob, existing[0].id]
         );
       } else {
         await pool.query(
@@ -118,10 +122,10 @@ export const Agent = {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             name,
-            '',
+            mob,
             emailId,
             password,
-            '',
+            img,
             '',
             id,
             '',

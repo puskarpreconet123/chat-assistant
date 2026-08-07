@@ -8,8 +8,8 @@ export async function getMessages(req, res) {
     const { conversationId } = req.params;
     const { cursor, limit = 20 } = req.query;
 
-    const isAgentUser = req.user.role === 'agent';
-    const isAdminUser = isAgentUser && String(req.user.emailId).toUpperCase().includes('ADMIN');
+    const isAgentUser = req.user.role === 'agent' || req.user.role === 'admin';
+    const isAdminUser = req.user.role === 'admin';
 
     // Admin has access to all messages. Others must be a participant of the conversation.
     if (!isAdminUser) {

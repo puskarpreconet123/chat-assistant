@@ -17,8 +17,7 @@ export async function getImageUploadUrl(req, res) {
         return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
       }
     } else if (conversationId.startsWith('conv-')) {
-      const parts = conversationId.split('-');
-      if (!parts.includes(senderId)) {
+      if (!conversationId.startsWith(`conv-${senderId}-`) && !conversationId.endsWith(`-${senderId}`)) {
         return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
       }
     }
@@ -52,8 +51,8 @@ export async function getImagePlayUrl(req, res) {
           return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
         }
       } else if (conversationId.startsWith('conv-')) {
-        const convParts = conversationId.split('-');
-        if (!convParts.includes(req.user.emailId)) {
+        const userId = req.user.emailId;
+        if (!conversationId.startsWith(`conv-${userId}-`) && !conversationId.endsWith(`-${userId}`)) {
           return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
         }
       }

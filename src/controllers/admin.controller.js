@@ -13,7 +13,7 @@ export async function createUser(req, res) {
 
 export async function listAgents(req, res) {
   try {
-    if (req.user && req.user.role === 'agent' && String(req.user.emailId).toUpperCase().startsWith('AGENCY-')) {
+    if (req.user && req.user.role === 'agent') {
       return res.status(403).json({ error: 'Access denied: Agents cannot view other agents.' });
     }
 
@@ -29,7 +29,7 @@ export async function listUsers(req, res) {
     let users = await User.find().populate('agentId').sort({ createdAt: -1 });
 
     // If the requesting user is an agent, filter the users list to only show users assigned to them!
-    if (req.user && req.user.role === 'agent' && String(req.user.emailId).toUpperCase().startsWith('AGENCY-')) {
+    if (req.user && req.user.role === 'agent') {
       users = users.filter(u => {
         const aId = u.agentId?._id || u.agentId;
         return String(aId) === String(req.user.emailId);
@@ -44,7 +44,7 @@ export async function listUsers(req, res) {
 
 export async function assignUsers(req, res) {
   try {
-    if (req.user && req.user.role === 'agent' && String(req.user.emailId).toUpperCase().startsWith('AGENCY-')) {
+    if (req.user && req.user.role === 'agent') {
       return res.status(403).json({ error: 'Access denied: Agents cannot assign users.' });
     }
 
@@ -76,7 +76,7 @@ export async function assignUsers(req, res) {
 
 export async function deleteUsers(req, res) {
   try {
-    if (req.user && req.user.role === 'agent' && String(req.user.emailId).toUpperCase().startsWith('AGENCY-')) {
+    if (req.user && req.user.role === 'agent') {
       return res.status(403).json({ error: 'Access denied: Agents cannot delete users.' });
     }
 

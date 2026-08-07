@@ -3,7 +3,7 @@ import { pool } from '../config/mysql.js';
 
 export async function listConversations(req, res) {
   try {
-    const isAgentUser = req.user.role === 'agent';
+    const isAgentUser = req.user.role === 'agent' || req.user.role === 'admin';
 
     let filter = {};
     if (isAgentUser) {
@@ -44,7 +44,8 @@ export async function listConversations(req, res) {
           emailId: u.email,
           name: u.name,
           status: u.show_status && u.show_status.toLowerCase() === 'active' ? 'active' : 'inactive',
-          mob: u.mob
+          mob: u.mob,
+          avatar: (u.img && u.img !== 'null' && u.img !== 'undefined') ? u.img : ''
         });
       }
     }
@@ -61,7 +62,8 @@ export async function listConversations(req, res) {
           _id: key,
           emailId: a.email,
           name: a.name,
-          status: a.show_status && a.show_status.toLowerCase() === 'active' ? 'active' : 'inactive'
+          status: a.show_status && a.show_status.toLowerCase() === 'active' ? 'active' : 'inactive',
+          avatar: (a.img && a.img !== 'null' && a.img !== 'undefined') ? a.img : ''
         };
         agentMap.set(key, mappedAgentObj);
         agentMap.set(a.email, mappedAgentObj);

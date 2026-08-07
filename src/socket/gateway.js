@@ -37,7 +37,7 @@ export function setupSocketGateway(httpServer) {
     // Join Socket.io room for targeted fan-out across server instances
     socket.join(userRoom);
 
-    const isAdminUser = role === 'agent' && String(emailId).toUpperCase().includes('ADMIN');
+    const isAdminUser = role === 'admin';
     if (isAdminUser) {
       socket.join('admins');
       console.log(`[Gateway:${gatewayId}] Admin connected and joined admins room: ${emailId}`);
@@ -142,7 +142,7 @@ export function setupSocketGateway(httpServer) {
         const createdAt = new Date();
 
         // Determine agentId & emailId for Conversation mapping
-        let currentAgentId = role === 'agent' ? emailId : agentId || recipientId;
+        let currentAgentId = (role === 'agent' || role === 'admin') ? emailId : agentId || recipientId;
         let currentEmailId = role === 'user' ? emailId : recipientId;
 
         // Try to fetch existing conversation to lock roles
@@ -166,9 +166,9 @@ export function setupSocketGateway(httpServer) {
               if (typeof ackCallback === 'function') ackCallback(errPayload);
               return socket.emit('error', errPayload);
             }
-          } else if (role === 'agent') {
+          } else if (role === 'agent' || role === 'admin') {
             // Normal agents (non-admin) can only start a chat with users assigned to them
-            const isAdminSender = String(emailId).toUpperCase().includes('ADMIN');
+            const isAdminSender = role === 'admin';
             if (!isAdminSender) {
               const userObj = await User.findOne({ emailId: recipientId });
               if (!userObj) {
@@ -187,7 +187,7 @@ export function setupSocketGateway(httpServer) {
         }
 
         // Dynamically determine recipientType based on whether the recipient is an agent
-        let recipientType = role === 'agent' ? 'user' : 'agent';
+        let recipientType = (role === 'agent' || role === 'admin') ? 'user' : 'agent';
         try {
           const [rows] = await pool.query(
             "SELECT type FROM users WHERE (email = ? OR agency_unq_id = ?)",
@@ -291,7 +291,7 @@ export function setupSocketGateway(httpServer) {
         const result = await Message.updateMany(filter, { $set: { status: 'read' } });
 
         // 2. Reset unread counter for current user in Conversation
-        const unreadField = role === 'agent' ? 'unread.agent' : 'unread.user';
+        const unreadField = (role === 'agent' || role === 'admin') ? 'unread.agent' : 'unread.user';
         await Conversation.updateOne({ _id: conversationId }, { $set: { [unreadField]: 0 } });
 
         // 3. Relay read receipt back to sender's room

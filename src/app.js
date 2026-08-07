@@ -43,7 +43,7 @@ app.get('/', (req, res) => {
   if (!user) {
     return res.redirect('/view/login.html');
   }
-  if (user.role === 'agent') {
+  if (user.role === 'agent' || user.role === 'admin') {
     return res.redirect('/chat.html');
   } else {
     return res.redirect('/view/home.html');
@@ -60,23 +60,13 @@ app.get(['/view/login.html', '/login.html'], (req, res) => {
   res.sendFile(path.join(__dirname, '../public/view/login.html'));
 });
 
-// 3. Signup page: Redirect to root if already logged in
-app.get('/view/signup.html', (req, res) => {
-  const user = getUserFromSession(req);
-  if (user) {
-    return res.redirect('/');
-  }
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-  res.sendFile(path.join(__dirname, '../public/view/signup.html'));
-});
-
 // 4. Agent views: Restrict access to agents only
 app.get(['/chat.html', '/admin.html'], (req, res, next) => {
   const user = getUserFromSession(req);
   if (!user) {
     return res.redirect('/view/login.html');
   }
-  if (user.role !== 'agent') {
+  if (user.role !== 'agent' && user.role !== 'admin') {
     return res.redirect('/view/home.html');
   }
   const page = req.path.split('/').pop() || 'chat.html';
