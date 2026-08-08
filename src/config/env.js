@@ -18,5 +18,6 @@ export const config = {
     endpoint: process.env.WASABI_ENDPOINT || process.env.S3_ENDPOINT || 'https://s3.us-east-1.wasabisys.com',
     cdnBaseUrl: process.env.WASABI_CDN_BASE_URL || process.env.CDN_BASE_URL || 'https://s3.us-east-1.wasabisys.com/chat-recordings'
   },
-  phpApiUrl: process.env.PHP_API_URL || 'https://telewiz.in/officemanage/api.php'
+  phpApiUrl: process.env.PHP_API_URL || 'https://telewiz.in/officemanage/api.php',
+  fixedApiToken: process.env.FIXED_API_TOKEN || 'chat_fixed_auth_token_2026_prod'
 };

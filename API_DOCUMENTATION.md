@@ -1,16 +1,65 @@
 # Chat Assistant - API & WebSocket Documentation
 
-This documentation covers all the REST API endpoints and Socket.io events available in the Chat Assistant platform.
+This documentation covers all the REST API endpoints and Socket.io events available in the Chat Assistant platform, reflecting the actual codebase implementation.
 
 ---
 
 ## Authentication & Headers
 
-All **Protected** endpoints require the `Authorization` header formatted as a Bearer token:
+All **Protected** REST endpoints and Socket.io connections require authentication.
+
+### JWT Token Authorization
+For REST endpoints, pass the JWT token in the `Authorization` header:
 
 ```http
 Authorization: Bearer <JWT_TOKEN>
 ```
+
+### Developer Bypass Token
+For testing and integration, if a fixed token (`FIXED_API_TOKEN`) is configured in the environment:
+- Pass the fixed token in the Bearer header.
+- Use the following custom headers to impersonate any user or role:
+  - `x-act-as-email` (default: `developer`)
+  - `x-act-as-role` (default: `user`)
+  - `x-act-as-name` (default: `App User`)
+  - `x-act-as-agent-id` (default: agent's email for agent/admin roles, otherwise `null`)
+
+```http
+Authorization: Bearer chat_fixed_auth_token_2026_prod
+x-act-as-email: user-alice-1@example.com
+x-act-as-role: user
+x-act-as-name: Alice
+```
+
+---
+
+## Global Page & Health Routes
+
+### Page Views & Redirects
+The server serves static views and routes users dynamically based on their role and authentication status (read from `token` cookie):
+- `GET /`
+  - **Redirects**:
+    - Unauthenticated: Redirects to `/view/login.html`
+    - Agent/Admin: Redirects to `/chat.html`
+    - User (Player): Redirects to `/view/home.html`
+- `GET /view/login.html`, `/login.html`
+  - Serves the login page. Redirects to `/` if already logged in.
+- `GET /chat.html`, `/admin.html`
+  - Serves Agent/Admin dashboard page. Restricts access to agents and admins. Redirects to `/view/home.html` if user role is `user` and `/view/login.html` if unauthenticated.
+- `GET /view/home.html`, `/view/recharge.html`, `/view/records.html`
+  - Serves Player/User pages. Restricts access to users. Redirects to `/chat.html` if agent/admin and `/view/login.html` if unauthenticated.
+
+### `GET /health`
+- **Access**: Public
+- **Description**: Returns server status, uptime, and current timestamp.
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "ok",
+    "uptime": 123.45,
+    "timestamp": "2026-08-08T12:00:00.000Z"
+  }
+  ```
 
 ---
 
@@ -20,41 +69,37 @@ Authorization: Bearer <JWT_TOKEN>
 
 #### `POST /api/v1/auth/login`
 - **Access**: Public
-- **Description**: Authenticate a user or an agent.
-- **Request Body**:
+- **Description**: Authenticate a user or an agent. Communicates with the external API (`https://telewiz.in/officemanage/api.php`) to validate credentials and sync profile data to the local MongoDB database.
+- **Request Body (Normal login)**:
   ```json
   {
-    "userId": "user-alice-1",
+    "emailId": "user-alice-1@example.com",
     "password": "password"
+  }
+  ```
+- **Request Body (Impersonation bypass)**:
+  Available only to authenticated Agents/Admins passing their Bearer token. Bypasses the password check to log in as another user:
+  ```json
+  {
+    "emailId": "user-alice-1@example.com",
+    "role": "user",
+    "name": "Alice"
   }
   ```
 - **Response (200 OK)**:
   ```json
   {
     "token": "eyJhbGciOiJIUzI1Ni...",
+    "avatar": "https://telewiz.in/uploads/avatar.png",
     "user": {
-      "_id": "user-alice-1",
+      "_id": "user-alice-1@example.com",
+      "emailId": "user-alice-1@example.com",
+      "mob": "9876543210",
+      "role": "user",
+      "agentId": "agent-alice",
       "name": "Alice",
-      "role": "user"
-    },
-    "role": "user"
-  }
-  ```
-
-#### `POST /api/v1/auth/seed`
-- **Access**: Public
-- **Description**: Retrieve the default seed users, agents, and their relations.
-- **Response (200 OK)**:
-  ```json
-  {
-    "seedData": [
-      {
-        "agent": { "_id": "agent-alice", "name": "Agent Alice" },
-        "users": [
-          { "_id": "user-alice-1", "name": "Alice User 1" }
-        ]
-      }
-    ]
+      "avatar": "https://telewiz.in/uploads/avatar.png"
+    }
   }
   ```
 
@@ -64,15 +109,32 @@ Authorization: Bearer <JWT_TOKEN>
 
 #### `GET /api/v1/conversations`
 - **Access**: Protected
-- **Description**: List all active conversations for the authenticated user/agent.
+- **Description**: List all active conversations for the authenticated user/agent, sorted by `lastMessageAt` in descending order.
+- **Query Parameters**:
+  - `limit` (optional, default: 20): Number of conversations to retrieve.
 - **Response (200 OK)**:
   ```json
   {
+    "role": "user",
+    "count": 1,
     "conversations": [
       {
         "_id": "conv-agent-alice-user-alice-1",
-        "agentId": "agent-alice",
-        "userId": "user-alice-1",
+        "agentId": {
+          "_id": "agent-alice",
+          "emailId": "agent-alice@example.com",
+          "name": "Agent Alice",
+          "status": "active",
+          "avatar": ""
+        },
+        "emailId": {
+          "_id": "user-alice-1@example.com",
+          "emailId": "user-alice-1@example.com",
+          "name": "Alice",
+          "status": "active",
+          "mob": "9876543210",
+          "avatar": "https://telewiz.in/uploads/avatar.png"
+        },
         "lastMessageAt": "2026-08-04T12:00:00.000Z",
         "unread": { "agent": 1, "user": 0 }
       }
@@ -81,23 +143,24 @@ Authorization: Bearer <JWT_TOKEN>
   ```
 
 #### `GET /api/v1/conversations/:conversationId/messages`
-- **Access**: Protected
-- **Description**: Get cursor-paginated messages history for a conversation.
+- **Access**: Protected (Participant or Admin only)
+- **Description**: Retrieve cursor-paginated message history for a conversation.
+- **Access Rule**: Admins have access to all messages. Others must be a participant of the conversation.
 - **Query Parameters**:
-  - `limit` (optional, default: 20): Number of messages to retrieve.
+  - `limit` (optional, default: 20, min: 1, max: 100): Number of messages to retrieve.
   - `cursor` (optional): ISO Date string of the oldest message for fetching older history.
 - **Response (200 OK)**:
   ```json
   {
     "conversationId": "conv-agent-alice-user-alice-1",
-    "count": 2,
+    "count": 1,
     "hasMore": false,
     "nextCursor": "2026-08-04T12:00:00.000Z",
     "messages": [
       {
         "_id": "msg-12345",
         "conversationId": "conv-agent-alice-user-alice-1",
-        "senderId": "user-alice-1",
+        "senderId": "user-alice-1@example.com",
         "senderType": "user",
         "type": "text",
         "text": "Hello!",
@@ -107,13 +170,14 @@ Authorization: Bearer <JWT_TOKEN>
     ]
   }
   ```
+  *Note: For messages of type `voice` or `image`, the server automatically resolves and appends a `cdnUrl` to the `audio` or `image` metadata payload (resolving to local mock URLs in development or pre-signed URLs in production S3 mode).*
 
 ---
 
 ### 3. Voice Notes
 
 #### `POST /api/v1/voice/presigned-url`
-- **Access**: Protected
+- **Access**: Protected (Participant only)
 - **Description**: Request a pre-signed cloud upload URL (or mock URL) for a voice note.
 - **Request Body**:
   ```json
@@ -134,10 +198,10 @@ Authorization: Bearer <JWT_TOKEN>
   ```
 
 #### `GET /api/v1/voice/play-url`
-- **Access**: Protected
-- **Description**: Retrieve a pre-signed S3 download/playback URL for a voice note key (serves locally if file key exists on local disk).
+- **Access**: Protected (Participant only)
+- **Description**: Retrieve a pre-signed S3 download/playback URL for a voice note key.
 - **Query Parameters**:
-  - `key` (required): S3 key/local path key of the audio file.
+  - `key` (required): S3 key or local path key of the audio file.
 - **Response (200 OK)**:
   ```json
   {
@@ -150,7 +214,7 @@ Authorization: Bearer <JWT_TOKEN>
 ### 4. Images
 
 #### `POST /api/v1/image/presigned-url`
-- **Access**: Protected
+- **Access**: Protected (Participant only)
 - **Description**: Request a pre-signed cloud upload URL (or mock URL) for an image.
 - **Request Body**:
   ```json
@@ -171,10 +235,10 @@ Authorization: Bearer <JWT_TOKEN>
   ```
 
 #### `GET /api/v1/image/play-url`
-- **Access**: Protected
-- **Description**: Retrieve a pre-signed S3 download/viewing URL for an image key (serves locally if file key exists on local disk).
+- **Access**: Protected (Participant only)
+- **Description**: Retrieve a pre-signed S3 download/viewing URL for an image key.
 - **Query Parameters**:
-  - `key` (required): S3 key/local path key of the image file.
+  - `key` (required): S3 key or local path key of the image file.
 - **Response (200 OK)**:
   ```json
   {
@@ -189,8 +253,8 @@ Authorization: Bearer <JWT_TOKEN>
 These endpoints accept raw binary PUT uploads when operating in local development or S3 fallback mode.
 
 #### `PUT /api/v1/voice/upload-mock`
-- **Access**: Public
-- **Description**: Save voice note binary content to local filesystem (`public/uploads/`).
+- **Access**: Protected (requireAuth)
+- **Description**: Save voice note binary content directly to the local filesystem (`public/uploads/`).
 - **Query Parameters**:
   - `key` (required): Relative file path key.
 - **Body**: Raw binary audio buffer (`Content-Type: audio/webm`).
@@ -204,8 +268,8 @@ These endpoints accept raw binary PUT uploads when operating in local developmen
   ```
 
 #### `PUT /api/v1/image/upload-mock`
-- **Access**: Public
-- **Description**: Save image binary content to local filesystem (`public/uploads/`).
+- **Access**: Protected (requireAuth)
+- **Description**: Save image binary content directly to the local filesystem (`public/uploads/`).
 - **Query Parameters**:
   - `key` (required): Relative file path key.
 - **Body**: Raw binary image buffer (`Content-Type: image/png` or `image/jpeg`).
@@ -220,84 +284,98 @@ These endpoints accept raw binary PUT uploads when operating in local developmen
 
 ---
 
-### 6. Administration
+### 6. Game & Subscription Routes
 
-#### `POST /api/v1/admin/agents`
-- **Access**: Public (Convenience for testing)
-- **Description**: Create or update an agent.
-- **Request Body**:
+#### `GET /api/v1/games`
+- **Access**: Protected (requireAuth)
+- **Description**: Retrieve a list of games with their subscription status mapped from the user's subscriptions database. Games are sorted by subscription status (`DONE` first, `PENDING` second, `NONE` last) and then by order number.
+- **Response (200 OK)**:
   ```json
   {
-    "id": "agent-id",
-    "name": "Agent Name"
-  }
-  ```
-- **Response (201 Created)**:
-  ```json
-  {
-    "agent": {
-      "_id": "agent-id",
-      "name": "Agent Name",
-      "status": "active",
-      "createdAt": "2026-08-04T12:00:00.000Z"
-    },
-    "token": "eyJhbGciOiJIUzI1Ni..."
-  }
-  ```
-
-#### `POST /api/v1/admin/users`
-- **Access**: Public (Convenience for testing)
-- **Description**: Create or update a user.
-- **Request Body**:
-  ```json
-  {
-    "id": "user-id",
-    "name": "User Name",
-    "agentId": "agent-id"
-  }
-  ```
-- **Response (201 Created)**:
-  ```json
-  {
-    "user": {
-      "_id": "user-id",
-      "name": "User Name",
-      "agentId": "agent-id",
-      "status": "active",
-      "createdAt": "2026-08-04T12:00:00.000Z"
-    },
-    "token": "eyJhbGciOiJIUzI1Ni..."
+    "success": true,
+    "games": [
+      {
+        "id": "1",
+        "name": "Aviator",
+        "slag": "aviator",
+        "order_no": "1",
+        "detail": "Predict how high the plane will fly and cash out before it crashes.",
+        "image": "aviator.png",
+        "type": "BOOK",
+        "show_status": "ACTIVE",
+        "date_ts": "1690000000",
+        "subscriptionStatus": "DONE"
+      }
+    ]
   }
   ```
 
-#### `POST /api/v1/admin/users/assign`
-- **Access**: Public
-- **Description**: Assign multiple users to an agent.
+#### `POST /api/v1/games/subscribe`
+- **Access**: Protected (requireAuth)
+- **Description**: Subscribes a user to a game book. Creates a pending subscription in the MongoDB Subscription collection.
 - **Request Body**:
   ```json
   {
-    "agentId": "agent-id",
-    "userIds": ["user-1", "user-2"]
+    "book_id": "1"
   }
   ```
 - **Response (200 OK)**:
   ```json
   {
-    "message": "Successfully assigned 2 users to agent \"Agent Name\"",
+    "success": true,
+    "message": "Subscription request submitted successfully"
+  }
+  ```
+
+---
+
+### 7. Administration
+
+#### `POST /api/v1/admin/agents`
+- **Access**: Protected
+- **Status**: **Disabled**
+- **Response (403 Forbidden)**:
+  ```json
+  { "error": "Access denied: Agent registration is disabled." }
+  ```
+
+#### `POST /api/v1/admin/users`
+- **Access**: Protected
+- **Status**: **Disabled**
+- **Response (403 Forbidden)**:
+  ```json
+  { "error": "Access denied: User registration is disabled." }
+  ```
+
+#### `POST /api/v1/admin/users/assign`
+- **Access**: Protected (Admin Only)
+- **Description**: Assign multiple users to an agent.
+- **Request Body**:
+  ```json
+  {
+    "agentId": "agent-alice",
+    "emailIds": ["user-1@example.com", "user-2@example.com"]
+  }
+  ```
+- **Response (200 OK)**:
+  ```json
+  {
+    "message": "Successfully assigned 2 users to agent \"Agent Alice\"",
     "modifiedCount": 2
   }
   ```
 
 #### `GET /api/v1/admin/agents`
-- **Access**: Public
-- **Description**: List all registered agents.
+- **Access**: Protected (Admin Only)
+- **Description**: List all registered agents. Agents receive a `403 Access denied` error.
 - **Response (200 OK)**:
   ```json
   {
     "agents": [
       {
-        "_id": "agent-id",
-        "name": "Agent Name",
+        "_id": "agent-alice",
+        "emailId": "agent-alice@example.com",
+        "name": "Agent Alice",
         "status": "active",
         "createdAt": "2026-08-04T12:00:00.000Z"
       }
@@ -306,21 +384,18 @@ These endpoints accept raw binary PUT uploads when operating in local developmen
   ```
 
 #### `GET /api/v1/admin/users`
-- **Access**: Public
-- **Description**: List all registered users.
+- **Access**: Protected (Admin or Agent)
+- **Description**: List registered users.
+- **Access Rule**: Admins see all users in the system. Agents only see users assigned to them (`agency_unq_id === agent.emailId`).
 - **Response (200 OK)**:
   ```json
   {
     "users": [
       {
-        "_id": "user-id",
-        "name": "User Name",
-        "agentId": {
-          "_id": "agent-id",
-          "name": "Agent Name",
-          "status": "active",
-          "createdAt": "2026-08-04T12:00:00.000Z"
-        },
+        "_id": "user-1@example.com",
+        "emailId": "user-1@example.com",
+        "name": "User 1",
+        "agentId": "agent-alice",
         "status": "active",
         "createdAt": "2026-08-04T12:00:00.000Z"
       }
@@ -329,12 +404,12 @@ These endpoints accept raw binary PUT uploads when operating in local developmen
   ```
 
 #### `DELETE /api/v1/admin/users`
-- **Access**: Public
-- **Description**: Delete users along with their conversations and messages.
+- **Access**: Protected (Admin Only)
+- **Description**: Delete multiple users along with their conversations and messages. Agents receive a `403 Access denied` error.
 - **Request Body**:
   ```json
   {
-    "userIds": ["user-1"]
+    "emailIds": ["user-1@example.com"]
   }
   ```
 - **Response (200 OK)**:
@@ -363,6 +438,12 @@ const socket = io({
 
 #### `message:send`
 - **Description**: Send a new message (text, voice, or image) to a recipient.
+- **Rate Limit**: Rate limited to a maximum of 60 messages per 60 seconds per user.
+- **Participant Access Check**:
+  - For existing conversations, the sender must be a participant of that conversation.
+  - For new conversations:
+    - Users can only message their assigned agent.
+    - Agents can only message users assigned to them (Admins can message any user).
 - **Payload**:
   - **Text Message**:
     ```json
@@ -406,7 +487,7 @@ const socket = io({
   {
     "messageId": "msg-12345",
     "conversationId": "conv-agent-alice-user-alice-1",
-    "senderId": "user-alice-1"
+    "senderId": "user-alice-1@example.com"
   }
   ```
 
@@ -416,16 +497,16 @@ const socket = io({
   ```json
   {
     "conversationId": "conv-agent-alice-user-alice-1",
-    "senderId": "user-alice-1",
-    "messageIds": ["msg-12345"]
+    "senderId": "user-alice-1@example.com",
+    "messageIds": ["msg-12345"] // optional
   }
   ```
 
 #### `presence:check`
 - **Description**: Query if a specific user/agent is online.
-- **Payload**:
+- **Payload**: Can be a string containing the email ID, or an object:
   ```json
-  { "userId": "user-alice-1" }
+  { "emailId": "user-alice-1@example.com" }
   ```
 
 ---
@@ -433,7 +514,7 @@ const socket = io({
 ### 2. Server to Client Events
 
 #### `message:queued`
-- **Description**: Acknowledges that `message:send` was received and pushed to the Redis Stream queue.
+- **Description**: Acknowledges that `message:send` was received and pushed to the Redis Streams queue.
 - **Payload**:
   ```json
   {
@@ -445,7 +526,7 @@ const socket = io({
   ```
 
 #### `message:sent`
-- **Description**: Sent to the message sender once the Redis Queue worker has successfully written the message to MongoDB.
+- **Description**: Sent to the message sender's room once the Redis Stream queue worker has successfully written the message to MongoDB.
 - **Payload**:
   ```json
   {
@@ -457,13 +538,13 @@ const socket = io({
   ```
 
 #### `message:new`
-- **Description**: Real-time message delivery sent to the recipient room.
+- **Description**: Real-time message delivery sent to the recipient's room. Also delivered to the conversation's agent (if the message was sent by an admin) and all admins in the `admins` room.
 - **Payload**:
   ```json
   {
     "_id": "msg-12345",
     "conversationId": "conv-agent-alice-user-alice-1",
-    "senderId": "user-alice-1",
+    "senderId": "user-alice-1@example.com",
     "senderType": "user",
     "type": "text",
     "text": "Hello world!",
@@ -473,7 +554,7 @@ const socket = io({
   ```
 
 #### `message:delivered`
-- **Description**: Relayed to the message sender when the recipient has acknowledged delivery.
+- **Description**: Relayed to the message sender when the recipient has acknowledged delivery (or when they log in online and pending offline messages are bulk-delivered).
 - **Payload**:
   ```json
   {
@@ -497,11 +578,11 @@ const socket = io({
   ```
 
 #### `presence:res`
-- **Description**: Broadcast response to `presence:check` containing status.
+- **Description**: Response to `presence:check` containing online status.
 - **Payload**:
   ```json
   {
-    "userId": "user-alice-1",
+    "emailId": "user-alice-1@example.com",
     "isOnline": true
   }
   ```

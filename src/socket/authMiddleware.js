@@ -1,4 +1,5 @@
 import { verifyToken } from '../services/auth.service.js';
+import { config } from '../config/env.js';
 
 export function socketAuthMiddleware(socket, next) {
   try {
@@ -8,6 +9,22 @@ export function socketAuthMiddleware(socket, next) {
 
     if (!token) {
       return next(new Error('Authentication error: JWT token missing'));
+    }
+
+    // Bypass token check for fixed API token (if configured)
+    if (config.fixedApiToken && config.fixedApiToken.trim() !== '' && token === config.fixedApiToken) {
+      const actAsEmail = socket.handshake.auth?.actAsEmail || socket.handshake.headers?.['x-act-as-email'] || 'developer';
+      const actAsRole = socket.handshake.auth?.actAsRole || socket.handshake.headers?.['x-act-as-role'] || 'user';
+      const actAsName = socket.handshake.auth?.actAsName || socket.handshake.headers?.['x-act-as-name'] || 'App User';
+      const actAsAgentId = socket.handshake.auth?.actAsAgentId || socket.handshake.headers?.['x-act-as-agent-id'] || ((actAsRole === 'agent' || actAsRole === 'admin') ? actAsEmail : null);
+
+      socket.data.user = {
+        emailId: actAsEmail,
+        role: actAsRole,
+        agentId: actAsAgentId,
+        name: actAsName
+      };
+      return next();
     }
 
     const decoded = verifyToken(token);

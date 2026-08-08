@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { verifyToken } from '../services/auth.service.js';
 import { restRateLimiter } from '../services/rateLimiter.service.js';
+import { config } from '../config/env.js';
 import * as authController from '../controllers/auth.controller.js';
 import * as adminController from '../controllers/admin.controller.js';
 import * as conversationController from '../controllers/conversation.controller.js';
@@ -25,6 +26,23 @@ function requireAuth(req, res, next) {
   }
 
   const token = authHeader.split(' ')[1];
+
+  // Bypass token check for fixed API token (if configured)
+  if (config.fixedApiToken && config.fixedApiToken.trim() !== '' && token === config.fixedApiToken) {
+    const actAsEmail = req.headers['x-act-as-email'] || 'developer';
+    const actAsRole = req.headers['x-act-as-role'] || 'user';
+    const actAsName = req.headers['x-act-as-name'] || 'App User';
+    const actAsAgentId = req.headers['x-act-as-agent-id'] || ((actAsRole === 'agent' || actAsRole === 'admin') ? actAsEmail : null);
+
+    req.user = {
+      emailId: actAsEmail,
+      role: actAsRole,
+      name: actAsName,
+      agentId: actAsAgentId
+    };
+    return next();
+  }
+
   try {
     const decoded = verifyToken(token);
     req.user = decoded;
@@ -50,7 +68,7 @@ router.use((req, res, next) => {
 router.post('/auth/login', authController.login);
 
 // Mock upload endpoint for voice notes
-router.put('/voice/upload-mock', express.raw({ type: '*/*', limit: '10mb' }), async (req, res) => {
+router.put('/voice/upload-mock', requireAuth, express.raw({ type: '*/*', limit: '10mb' }), async (req, res) => {
   try {
     const fileKey = req.query.key;
     if (!fileKey) {
@@ -76,7 +94,7 @@ router.put('/voice/upload-mock', express.raw({ type: '*/*', limit: '10mb' }), as
 });
 
 // Mock upload endpoint for images
-router.put('/image/upload-mock', express.raw({ type: '*/*', limit: '10mb' }), async (req, res) => {
+router.put('/image/upload-mock', requireAuth, express.raw({ type: '*/*', limit: '10mb' }), async (req, res) => {
   try {
     const fileKey = req.query.key;
     if (!fileKey) {

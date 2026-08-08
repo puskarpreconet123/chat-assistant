@@ -101,6 +101,40 @@ async function runTests() {
     console.log('✔ Voice pre-signed URL generated:', voiceData.fileKey);
 
     // ----------------------------------------------------
+    // TEST 3b: REST API Fixed Token Auth Bypass & Mock Upload
+    // ----------------------------------------------------
+    console.log('\n[Test 3b] Testing Fixed API Token Auth Bypass & Mock Upload...');
+    const fixedToken = 'chat_fixed_auth_token_2026_prod';
+    
+    // Check that unauthorized access is blocked
+    const mockUploadFailRes = await fetch(`${serverUrl}/api/v1/voice/upload-mock?key=test-fixed-token-file.webm`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'audio/webm'
+      },
+      body: Buffer.from('mock-audio-content')
+    });
+    assert.strictEqual(mockUploadFailRes.status, 401, 'Mock upload without token should return 401 Unauthorized');
+    console.log('✔ Mock upload protection verified (returned 401 Unauthorized without token)');
+
+    // Check that access with fixed API token is allowed
+    const mockUploadRes = await fetch(`${serverUrl}/api/v1/voice/upload-mock?key=test-fixed-token-file.webm`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'audio/webm',
+        Authorization: `Bearer ${fixedToken}`,
+        'X-Act-As-Email': 'user-test-1@example.com',
+        'X-Act-As-Role': 'user',
+        'X-Act-As-Name': 'Alice'
+      },
+      body: Buffer.from('mock-audio-content')
+    });
+    const mockUploadData = await mockUploadRes.json();
+    assert.strictEqual(mockUploadRes.status, 200, 'Mock upload should return 200 OK with fixed token');
+    assert(mockUploadData.success, 'Mock upload should return success: true');
+    console.log('✔ Mock upload with fixed token and act-as headers successful!');
+
+    // ----------------------------------------------------
     // TEST 4: Socket.io Connection & Presence Registration
     // ----------------------------------------------------
     console.log('\n[Test 4] Connecting WebSockets with JWT Handshake Auth...');
