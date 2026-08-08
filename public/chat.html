@@ -730,7 +730,13 @@
 
   <header>
     <div class="logo">
-      <span class="logo-icon">💬</span>
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 0.5rem;">
+        <path d="M12 2C6.477 2 2 6.03 2 11c0 2.885 1.512 5.454 3.908 7.117L5 21l3.545-1.182C9.563 20.082 10.76 20.2 12 20.2c5.523 0 10-4.03 10-9.2C22 6.03 17.523 2 12 2z" fill="rgba(255,255,255,0.2)"/>
+        <path d="M12 3c-4.97 0-9 3.582-9 8 0 2.502 1.34 4.743 3.447 6.136l-.603 1.808 2.373-.79C9.135 18.528 10.536 18.7 12 18.7c4.97 0 9-3.582 9-8s-4.03-8-9-8zm0-2c6.075 0 11 4.477 11 10s-4.925 10-11 10a11.187 11.187 0 01-4.71-.976L3.5 22.5l1.096-3.288A9.742 9.742 0 011 11c0-5.523 4.925-10 11-10z" fill="#ffffff"/>
+        <circle cx="8" cy="11" r="1.5" fill="#ffffff"/>
+        <circle cx="12" cy="11" r="1.5" fill="#ffffff"/>
+        <circle cx="16" cy="11" r="1.5" fill="#ffffff"/>
+      </svg>
       <span>Chat Assistant</span>
     </div>
     <div style="display: flex; align-items: center; gap: 1rem;">
@@ -798,7 +804,15 @@
 
       <div id="messagesContainer" class="messages-container">
         <div style="margin:auto; text-align:center; color:var(--text-secondary); max-width: 280px; padding: 2rem;">
-          <div style="font-size: 3.5rem; margin-bottom: 0.8rem;">💬</div>
+          <div style="margin-bottom: 1.2rem; display: flex; justify-content: center;">
+            <svg viewBox="0 0 24 24" width="72" height="72" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.477 2 2 6.03 2 11c0 2.885 1.512 5.454 3.908 7.117L5 21l3.545-1.182C9.563 20.082 10.76 20.2 12 20.2c5.523 0 10-4.03 10-9.2C22 6.03 17.523 2 12 2z" fill="var(--primary-light)" opacity="0.4"/>
+              <path d="M12 3c-4.97 0-9 3.582-9 8 0 2.502 1.34 4.743 3.447 6.136l-.603 1.808 2.373-.79C9.135 18.528 10.536 18.7 12 18.7c4.97 0 9-3.582 9-8s-4.03-8-9-8zm0-2c6.075 0 11 4.477 11 10s-4.925 10-11 10a11.187 11.187 0 01-4.71-.976L3.5 22.5l1.096-3.288A9.742 9.742 0 011 11c0-5.523 4.925-10 11-10z" fill="var(--primary)"/>
+              <circle cx="8" cy="11" r="1.5" fill="var(--primary)"/>
+              <circle cx="12" cy="11" r="1.5" fill="var(--primary)"/>
+              <circle cx="16" cy="11" r="1.5" fill="var(--primary)"/>
+            </svg>
+          </div>
           <div style="font-weight: 600; font-size: 1rem; color: var(--text-primary);">Chat Assistant</div>
           <p style="font-size: 0.8rem; margin-top: 0.5rem; line-height: 1.4;">Select a participant from the sidebar to establish a 1-to-1 chat session. You can open different participants in separate browser tabs to test realtime exchange.</p>
         </div>
@@ -1157,8 +1171,13 @@
           item.className = 'conv-item';
           item.dataset.emailId = agent._id;
 
+          const hasAvatar = agent.avatar && agent.avatar.trim() !== '';
+          const avatarHtml = hasAvatar 
+            ? `<img class="avatar" src="${escapeHtmlAttr(agent.avatar)}" alt="${escapeHtmlAttr(agent.name)}" onerror="this.onerror=null; this.outerHTML='<div class=&quot;avatar&quot; style=&quot;background-color: ${avatarColor};&quot;>${initials}</div>';" style="object-fit: cover; border-radius: 50%;" />`
+            : `<div class="avatar" style="background-color: ${avatarColor};">${initials}</div>`;
+
           item.innerHTML = `
-            <div class="avatar" style="background-color: ${avatarColor};">${initials}</div>
+            ${avatarHtml}
             <div class="conv-details">
               <div class="conv-header-row">
                 <div class="conv-name">${escapeHtml(agent.name)} <span style="font-size: 0.7rem; color: var(--primary); font-weight: bold; background: var(--primary-light); padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.4rem;">AGENT</span></div>

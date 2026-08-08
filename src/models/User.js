@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const UserSchema = new mongoose.Schema({
   _id: { type: String }, // will be the email/emailId
+  id: { type: Number },
   emailId: { type: String, required: true },
   name: { type: String, default: '' },
   mob: { type: String, default: '' },
@@ -32,7 +33,7 @@ UserSchema.virtual('status').get(function() {
 });
 
 UserSchema.virtual('agentId').get(function() {
-  return this.agency_unq_id || '';
+  return this.agency_unq_id || (this.agency_id ? `AGENCY-${this.agency_id}` : '');
 }).set(function(val) {
   this.agency_unq_id = val || '';
   if (val && val.includes('-')) {

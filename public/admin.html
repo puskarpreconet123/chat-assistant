@@ -977,7 +977,8 @@
       if (currentUser && decoded) {
         currentUser.role = decoded.role;
       }
-      isAgent = currentUser && currentUser.role === 'agent';
+      const isAdmin = currentUser && (currentUser.role === 'admin' || String(currentUser._id || currentUser.emailId || '').toUpperCase().includes('ADMIN'));
+      isAgent = currentUser && currentUser.role === 'agent' && !isAdmin;
 
       if (currentUser) {
         const profileNameEl = document.getElementById('profileName');

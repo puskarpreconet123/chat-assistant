@@ -528,7 +528,15 @@
     <div class="widget-header">
       <div style="display: flex; align-items: center; gap: 0.55rem; min-width: 0;">
         <div id="widgetHeaderAvatar" class="widget-avatar" style="display: none;"></div>
-        <div id="widgetHeaderDefaultIcon" style="font-size: 1.2rem; display: flex; align-items: center;">💬</div>
+        <div id="widgetHeaderDefaultIcon" style="display: flex; align-items: center;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+            <path d="M12 2C6.477 2 2 6.03 2 11c0 2.885 1.512 5.454 3.908 7.117L5 21l3.545-1.182C9.563 20.082 10.76 20.2 12 20.2c5.523 0 10-4.03 10-9.2C22 6.03 17.523 2 12 2z" fill="rgba(255,255,255,0.2)"/>
+            <path d="M12 3c-4.97 0-9 3.582-9 8 0 2.502 1.34 4.743 3.447 6.136l-.603 1.808 2.373-.79C9.135 18.528 10.536 18.7 12 18.7c4.97 0 9-3.582 9-8s-4.03-8-9-8zm0-2c6.075 0 11 4.477 11 10s-4.925 10-11 10a11.187 11.187 0 01-4.71-.976L3.5 22.5l1.096-3.288A9.742 9.742 0 011 11c0-5.523 4.925-10 11-10z" fill="#ffffff"/>
+            <circle cx="8" cy="11" r="1.5" fill="#ffffff"/>
+            <circle cx="12" cy="11" r="1.5" fill="#ffffff"/>
+            <circle cx="16" cy="11" r="1.5" fill="#ffffff"/>
+          </svg>
+        </div>
         <div style="display: flex; flex-direction: column; min-width: 0; line-height: 1.2;">
           <span id="widgetHeaderTitleText" style="font-weight: 700; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Support Center</span>
           <span id="presenceIndicator" style="font-size: 0.68rem; font-weight: 500; display: none;" class="presence-offline">offline</span>
@@ -745,10 +753,17 @@
           const isVirtual = conv.isVirtual;
           const lastMsg = isVirtual ? 'Start a new conversation' : 'View chat history';
 
+          const safeAvatar = (partner?.avatar || '').replace(/"/g, '&quot;');
+          const safeName = (partnerName || '').replace(/"/g, '&quot;');
+          const hasAvatar = partner?.avatar && partner.avatar.trim() !== '';
+          const avatarHtml = hasAvatar 
+            ? `<img class="avatar-widget" src="${safeAvatar}" alt="${safeName}" onerror="this.onerror=null; this.outerHTML='<div class=&quot;avatar-widget&quot; style=&quot;background: ${avatarColor};&quot;>${initials}</div>';" style="object-fit: cover; border-radius: 50%; width: 36px; height: 36px;" />`
+            : `<div class="avatar-widget" style="background:${avatarColor};">${initials}</div>`;
+
           const item = document.createElement('div');
           item.className = 'conv-item-widget';
           item.innerHTML = `
-            <div class="avatar-widget" style="background:${avatarColor};">${initials}</div>
+            ${avatarHtml}
             <div class="conv-info-widget">
               <div class="conv-name-widget">${partnerName}</div>
               <div class="conv-meta-widget ${isVirtual ? 'virtual' : ''}">${lastMsg}</div>

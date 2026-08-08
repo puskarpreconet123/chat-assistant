@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const AgentSchema = new mongoose.Schema({
   _id: { type: String }, // agency_unq_id or email
+  id: { type: Number },
   emailId: { type: String, required: true },
   name: { type: String, default: '' },
   mob: { type: String, default: '' },
@@ -34,6 +35,10 @@ AgentSchema.statics.findByIdAndUpdate = async function(id, updateData, options =
     updateData.show_status = String(updateData.status).toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
   }
   
+  if (email) {
+    await this.deleteMany({ emailId: email, _id: { $ne: id } });
+  }
+
   if (options.upsert) {
     return await this.findOneAndUpdate({ _id: id }, { $set: { ...updateData, emailId: email } }, { new: true, upsert: true });
   } else {

@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { generateToken, verifyToken } from '../services/auth.service.js';
 import { Agent } from '../models/Agent.js';
 import { User } from '../models/User.js';
+import { config } from '../config/env.js';
 
 export async function login(req, res) {
   try {
@@ -61,14 +62,21 @@ export async function login(req, res) {
       let remoteStatus = 200;
 
       try {
-        const remoteRes = await fetch('https://telewiz.in/officemanage/api.php', {
+        const isMobile = /^\d+$/.test(emailId);
+        const reqBody = {
+          action: 'login',
+          password: password
+        };
+        if (isMobile) {
+          reqBody.mob = emailId;
+        } else {
+          reqBody.email = emailId;
+        }
+
+        const remoteRes = await fetch(config.phpApiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'login',
-            email: emailId,
-            password: password
-          })
+          body: JSON.stringify(reqBody)
         });
         remoteStatus = remoteRes.status;
         remoteData = await remoteRes.json();
@@ -82,10 +90,8 @@ export async function login(req, res) {
       if (remoteSuccess && remoteData && remoteData.user) {
         const remoteUser = remoteData.user;
         const remoteRole = String(remoteUser.role || '').toUpperCase();
-        if (remoteRole === 'AGENCY') {
+        if (remoteRole === 'AGENCY' || remoteRole === 'ADMIN') {
           role = 'agent';
-        } else if (remoteRole === 'ADMIN') {
-          role = 'admin';
         } else {
           role = 'user';
         }
@@ -96,8 +102,8 @@ export async function login(req, res) {
         const mob = remoteUser.mob || remoteUser.mobile || remoteUser.phone || '';
         const displayName = remoteUser.name || name || email;
 
-        if (role === 'agent' || role === 'admin') {
-          const agencyUnqId = remoteUser.agency_unq_id || remoteUser.id || email;
+        if (role === 'agent') {
+          const agencyUnqId = remoteUser.agency_unq_id || (remoteRole === 'ADMIN' && remoteUser.id ? `ADMIN-${remoteUser.id}` : (remoteRole === 'AGENCY' && remoteUser.id ? `AGENCY-${remoteUser.id}` : remoteUser.id || email));
           foundId = agencyUnqId;
           agentId = agencyUnqId;
           name = displayName;
@@ -105,6 +111,7 @@ export async function login(req, res) {
           await Agent.findByIdAndUpdate(
             agencyUnqId,
             {
+              id: remoteUser.id,
               emailId: email,
               password: password,
               name: displayName,
@@ -125,6 +132,7 @@ export async function login(req, res) {
           await User.findByIdAndUpdate(
             email,
             {
+              id: remoteUser.id,
               emailId: email,
               password: password,
               name: displayName,
@@ -136,6 +144,178 @@ export async function login(req, res) {
             },
             { upsert: true }
           );
+        }
+
+        // Run Role-Based User/Agent Synchronization
+        try {
+          if (remoteRole === 'ADMIN') {
+            const syncRes = await fetch(config.phpApiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'read_users' })
+            });
+            if (syncRes.ok) {
+              const syncData = await syncRes.json();
+              if (syncData.success && Array.isArray(syncData.data)) {
+                // Pre-build agency unique ID map
+                const agencyMap = {};
+                for (const u of syncData.data) {
+                  const uType = String(u.type || '').toUpperCase();
+                  if (uType === 'ADMIN' || uType === 'AGENCY') {
+                    agencyMap[String(u.id)] = u.agency_unq_id || (uType === 'ADMIN' ? `ADMIN-${u.id}` : `AGENCY-${u.id}`);
+                  }
+                }
+
+                for (const u of syncData.data) {
+                  const uType = String(u.type || '').toUpperCase();
+                  const uStatus = String(u.show_status || u.status || 'ACTIVE').toUpperCase();
+                  if (uType === 'ADMIN' || uType === 'AGENCY') {
+                    const agencyUnqId = u.agency_unq_id || (uType === 'ADMIN' ? `ADMIN-${u.id}` : `AGENCY-${u.id}`);
+                    await Agent.findByIdAndUpdate(
+                      agencyUnqId,
+                      {
+                        id: u.id,
+                        emailId: u.email,
+                        name: u.name,
+                        mob: u.mob,
+                        type: uType,
+                        status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
+                      },
+                      { upsert: true }
+                    );
+                  } else {
+                    const userAgencyId = u.agency_id || '';
+                    const userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
+                    await User.findByIdAndUpdate(
+                      u.email,
+                      {
+                        id: u.id,
+                        emailId: u.email,
+                        name: u.name,
+                        mob: u.mob,
+                        agency_id: userAgencyId,
+                        agency_unq_id: userAgencyUnqId,
+                        status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
+                      },
+                      { upsert: true }
+                    );
+                  }
+                }
+              }
+            }
+          } else if (remoteRole === 'AGENCY' && remoteUser.id) {
+            const syncRes = await fetch(config.phpApiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'get_by_agency_id', agency_id: String(remoteUser.id) })
+            });
+            if (syncRes.ok) {
+              const syncData = await syncRes.json();
+              if (syncData.success && Array.isArray(syncData.data)) {
+                // Pre-build agency unique ID map
+                const agencyMap = {};
+                for (const u of syncData.data) {
+                  const uType = String(u.type || '').toUpperCase();
+                  if (uType === 'ADMIN' || uType === 'AGENCY') {
+                    agencyMap[String(u.id)] = u.agency_unq_id || (uType === 'ADMIN' ? `ADMIN-${u.id}` : `AGENCY-${u.id}`);
+                  }
+                }
+
+                for (const u of syncData.data) {
+                  const uType = String(u.type || '').toUpperCase();
+                  const uStatus = String(u.show_status || u.status || 'ACTIVE').toUpperCase();
+                  if (uType === 'AGENCY') {
+                    const agencyUnqId = u.agency_unq_id || `AGENCY-${u.id}`;
+                    await Agent.findByIdAndUpdate(
+                      agencyUnqId,
+                      {
+                        id: u.id,
+                        emailId: u.email,
+                        name: u.name,
+                        mob: u.mob,
+                        type: uType,
+                        status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
+                      },
+                      { upsert: true }
+                    );
+                  } else {
+                    const userAgencyId = u.agency_id || String(remoteUser.id);
+                    const userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || `AGENCY-${userAgencyId}`;
+                    await User.findByIdAndUpdate(
+                      u.email,
+                      {
+                        id: u.id,
+                        emailId: u.email,
+                        name: u.name,
+                        mob: u.mob,
+                        agency_id: userAgencyId,
+                        agency_unq_id: userAgencyUnqId,
+                        status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
+                      },
+                      { upsert: true }
+                    );
+                  }
+                }
+              }
+            }
+          } else if (role === 'user' && remoteUser.agency_id) {
+            const syncRes = await fetch(config.phpApiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'get_by_agency_id', agency_id: String(remoteUser.agency_id) })
+            });
+            if (syncRes.ok) {
+              const syncData = await syncRes.json();
+              if (syncData.success && Array.isArray(syncData.data)) {
+                // Pre-build agency unique ID map
+                const agencyMap = {};
+                for (const u of syncData.data) {
+                  const uType = String(u.type || '').toUpperCase();
+                  if (uType === 'ADMIN' || uType === 'AGENCY') {
+                    agencyMap[String(u.id)] = u.agency_unq_id || (uType === 'ADMIN' ? `ADMIN-${u.id}` : `AGENCY-${u.id}`);
+                  }
+                }
+
+                for (const u of syncData.data) {
+                  const uType = String(u.type || '').toUpperCase();
+                  const uStatus = String(u.show_status || u.status || 'ACTIVE').toUpperCase();
+                  if (uType === 'AGENCY') {
+                    const agencyUnqId = u.agency_unq_id || `AGENCY-${u.id}`;
+                    await Agent.findByIdAndUpdate(
+                      agencyUnqId,
+                      {
+                        id: u.id,
+                        emailId: u.email,
+                        name: u.name,
+                        mob: u.mob,
+                        type: uType,
+                        status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
+                      },
+                      { upsert: true }
+                    );
+                  } else {
+                    const userAgencyIdVal = u.agency_id || String(remoteUser.agency_id);
+                    const userAgencyUnqIdVal = u.agency_unq_id || agencyMap[String(userAgencyIdVal)] || `AGENCY-${userAgencyIdVal}`;
+                    await User.findByIdAndUpdate(
+                      u.email,
+                      {
+                        id: u.id,
+                        emailId: u.email,
+                        name: u.name,
+                        mob: u.mob,
+                        agency_id: userAgencyIdVal,
+                        agency_unq_id: userAgencyUnqIdVal,
+                        status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
+                      },
+                      { upsert: true }
+                    );
+                  }
+                }
+              }
+            }
+          }
+        } catch (syncErr) {
+          console.error('[Auth Sync] External sync failed:', syncErr.message);
         }
       } else {
         // If account is suspended or inactive on remote API, block login immediately

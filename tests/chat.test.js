@@ -409,6 +409,167 @@ async function runTests() {
     assert.strictEqual(imgMongoMsg.image.key, imgData.fileKey);
     console.log('✔ Image message stored and verified in MongoDB');
 
+    // ----------------------------------------------------
+    // TEST 12: Telewiz API Integration (Mocked)
+    // ----------------------------------------------------
+    console.log('\n[Test 12] Testing Telewiz API integration endpoints (mocked)...');
+    const originalFetch = global.fetch;
+    let mockCalls = [];
+
+    global.fetch = async (url, options) => {
+      mockCalls.push({ url, options });
+      let body = {};
+      if (options?.body) {
+        try {
+          body = JSON.parse(options.body);
+        } catch (e) {
+          // not JSON
+        }
+      }
+      
+      if (url.includes('api.php') || url.includes('/officemanage/api.php')) {
+        if (body.action === 'login') {
+          if (body.email === 'agency@gmail.com' && body.password === '12345') {
+            return {
+              ok: true,
+              status: 200,
+              json: async () => ({
+                success: true,
+                message: "Login successful",
+                user: {
+                  id: "23",
+                  name: "Ritdz 4k",
+                  email: "agency@gmail.com",
+                  phone: "9000000000",
+                  role: "AGENCY",
+                  avatar: "https://telewiz.in/officemanage/uploads/photos/1784376403_Agency.jpg"
+                }
+              })
+            };
+          } else if (body.mob === '9000000000' && body.password === '12345') {
+            return {
+              ok: true,
+              status: 200,
+              json: async () => ({
+                success: true,
+                message: "Login successful",
+                user: {
+                  id: "23",
+                  name: "Ritdz 4k",
+                  email: "agency@gmail.com",
+                  phone: "9000000000",
+                  role: "AGENCY",
+                  avatar: "https://telewiz.in/officemanage/uploads/photos/1784376403_Agency.jpg"
+                }
+              })
+            };
+          }
+        } else if (body.action === 'get_by_agency_id') {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              success: true,
+              data: [
+                {
+                  id: 23,
+                  name: "Ritdz 4k",
+                  mob: "9000000000",
+                  email: "agency@gmail.com",
+                  img: "1784376403_Agency.jpg",
+                  agency_id: "",
+                  agency_unq_id: "AGENCY-23",
+                  read_status: "",
+                  verification: "",
+                  type: "AGENCY",
+                  show_status: "ACTIVE",
+                  date: "2026-07-18",
+                  time: ""
+                },
+                {
+                  id: 24,
+                  name: "Lorem Ipsum",
+                  mob: "9000000055",
+                  email: "sample@gmail.com",
+                  img: "",
+                  agency_id: "23",
+                  agency_unq_id: "AGENCY-23",
+                  read_status: "READ",
+                  verification: "DONE",
+                  type: "USER",
+                  show_status: "ACTIVE",
+                  date: "2026-07-27",
+                  time: "01:31:17pm"
+                }
+              ]
+            })
+          };
+        } else if (body.action === 'read_users') {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              success: true,
+              data: [
+                {
+                  id: 23,
+                  name: "Ritdz 4k",
+                  mob: "9000000000",
+                  email: "agency@gmail.com",
+                  img: "1784376403_Agency.jpg",
+                  agency_id: "",
+                  agency_unq_id: "AGENCY-23",
+                  read_status: "",
+                  verification: "",
+                  type: "AGENCY",
+                  show_status: "ACTIVE",
+                  date: "2026-07-18",
+                  time: ""
+                }
+              ]
+            })
+          };
+        }
+      }
+      return originalFetch(url, options);
+    };
+
+    try {
+      // 1. Test Login via Email (Agency)
+      const loginEmailRes = await fetch(`${serverUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailId: 'agency@gmail.com', password: '12345' })
+      });
+      const loginEmailData = await loginEmailRes.json();
+      assert.strictEqual(loginEmailRes.status, 200);
+      assert.strictEqual(loginEmailData.user.role, 'agent');
+      assert.strictEqual(loginEmailData.user.name, 'Ritdz 4k');
+      console.log('✔ Telewiz email login and auto-sync agency user data successful');
+
+      // 2. Test Login via Mobile (Agency)
+      const loginMobRes = await fetch(`${serverUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailId: '9000000000', password: '12345' })
+      });
+      const loginMobData = await loginMobRes.json();
+      assert.strictEqual(loginMobRes.status, 200);
+      console.log('✔ Telewiz mobile login successful');
+      // 4. Test List Users via Admin (which triggers read_users sync)
+      const adminToken = generateToken({ emailId: 'admin@gmail.com', role: 'admin', name: 'Admin' });
+      const listUsersRes = await fetch(`${serverUrl}/api/v1/admin/users`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+      const listUsersData = await listUsersRes.json();
+      assert.strictEqual(listUsersRes.status, 200);
+      assert(Array.isArray(listUsersData.users));
+      console.log('✔ Admin list users with Telewiz sync successful');
+
+    } finally {
+      global.fetch = originalFetch;
+    }
+
     // Clean up sockets
     userSocket.disconnect();
     agentSocket.disconnect();
