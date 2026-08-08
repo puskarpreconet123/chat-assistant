@@ -18,11 +18,5 @@ export const config = {
     endpoint: process.env.WASABI_ENDPOINT || process.env.S3_ENDPOINT || 'https://s3.us-east-1.wasabisys.com',
     cdnBaseUrl: process.env.WASABI_CDN_BASE_URL || process.env.CDN_BASE_URL || 'https://s3.us-east-1.wasabisys.com/chat-recordings'
   },
-  mysql: {
-    host: process.env.MYSQL_HOST || '127.0.0.1',
-    port: parseInt(process.env.MYSQL_PORT || '3306', 10),
-    user: process.env.MYSQL_USER || 'root',
-    password: process.env.MYSQL_PASSWORD || '',
-    database: process.env.MYSQL_DATABASE || 'testcrm'
-  }
+  phpApiUrl: process.env.PHP_API_URL || 'https://telewiz.in/officemanage/api.php'
 };

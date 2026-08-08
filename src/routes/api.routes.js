@@ -48,7 +48,6 @@ router.use((req, res, next) => {
 
 // Auth routes (Public)
 router.post('/auth/login', authController.login);
-router.post('/auth/seed', authController.seed);
 
 // Mock upload endpoint for voice notes
 router.put('/voice/upload-mock', express.raw({ type: '*/*', limit: '10mb' }), async (req, res) => {

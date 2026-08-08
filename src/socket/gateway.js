@@ -10,7 +10,7 @@ import { enqueueMessage } from '../queue/streamProducer.js';
 import { Message } from '../models/Message.js';
 import { Conversation } from '../models/Conversation.js';
 import { User } from '../models/User.js';
-import { pool } from '../config/mysql.js';
+import { Agent } from '../models/Agent.js';
 
 export function setupSocketGateway(httpServer) {
   const io = new Server(httpServer, {
@@ -189,20 +189,17 @@ export function setupSocketGateway(httpServer) {
         // Dynamically determine recipientType based on whether the recipient is an agent
         let recipientType = (role === 'agent' || role === 'admin') ? 'user' : 'agent';
         try {
-          const [rows] = await pool.query(
-            "SELECT type FROM users WHERE (email = ? OR agency_unq_id = ?)",
-            [recipientId, recipientId]
-          );
-          if (rows.length > 0) {
-            const type = rows[0].type;
-            if (type === 'AGENCY' || type === 'ADMIN') {
-              recipientType = 'agent';
-            } else {
+          const recipientAgent = await Agent.findOne({ $or: [{ emailId: recipientId }, { _id: recipientId }] });
+          if (recipientAgent) {
+            recipientType = 'agent';
+          } else {
+            const recipientUser = await User.findOne({ $or: [{ emailId: recipientId }, { _id: recipientId }] });
+            if (recipientUser) {
               recipientType = 'user';
             }
           }
         } catch (dbErr) {
-          console.error(`[Gateway] Error querying recipient type in MySQL for ${recipientId}:`, dbErr.message);
+          console.error(`[Gateway] Error querying recipient type in MongoDB for ${recipientId}:`, dbErr.message);
         }
 
         const messagePayload = {

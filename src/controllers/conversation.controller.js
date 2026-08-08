@@ -1,5 +1,6 @@
 import { Conversation } from '../models/Conversation.js';
-import { pool } from '../config/mysql.js';
+import { User } from '../models/User.js';
+import { Agent } from '../models/Agent.js';
 
 export async function listConversations(req, res) {
   try {
@@ -28,45 +29,43 @@ export async function listConversations(req, res) {
     // Convert mongoose documents to plain objects to mutate emailId and agentId
     const conversationsJson = conversations.map(c => c.toObject());
 
-    // Fetch user details from MySQL for all emailIds in this batch
     const emailIds = [...new Set(conversationsJson.map(c => c.emailId))].filter(Boolean);
     const agentIds = [...new Set(conversationsJson.map(c => c.agentId))].filter(Boolean);
 
     const userMap = new Map();
     if (emailIds.length > 0) {
-      const [users] = await pool.query(
-        `SELECT * FROM users WHERE email IN (${emailIds.map(() => '?').join(', ')})`,
-        emailIds
-      );
+      const users = await User.find({ _id: { $in: emailIds } });
       for (const u of users) {
-        userMap.set(u.email, {
-          _id: u.email,
-          emailId: u.email,
+        userMap.set(u.emailId, {
+          _id: u.emailId,
+          emailId: u.emailId,
           name: u.name,
-          status: u.show_status && u.show_status.toLowerCase() === 'active' ? 'active' : 'inactive',
+          status: u.status,
           mob: u.mob,
-          avatar: (u.img && u.img !== 'null' && u.img !== 'undefined') ? u.img : ''
+          avatar: u.avatar
         });
       }
     }
 
     const agentMap = new Map();
     if (agentIds.length > 0) {
-      const [agents] = await pool.query(
-        `SELECT * FROM users WHERE (email IN (${agentIds.map(() => '?').join(', ')}) OR agency_unq_id IN (${agentIds.map(() => '?').join(', ')}))`,
-        [...agentIds, ...agentIds]
-      );
+      const agents = await Agent.find({
+        $or: [
+          { emailId: { $in: agentIds } },
+          { _id: { $in: agentIds } }
+        ]
+      });
       for (const a of agents) {
-        const key = a.agency_unq_id || a.email;
+        const key = a._id || a.emailId;
         const mappedAgentObj = {
           _id: key,
-          emailId: a.email,
+          emailId: a.emailId,
           name: a.name,
-          status: a.show_status && a.show_status.toLowerCase() === 'active' ? 'active' : 'inactive',
-          avatar: (a.img && a.img !== 'null' && a.img !== 'undefined') ? a.img : ''
+          status: a.status,
+          avatar: a.avatar
         };
         agentMap.set(key, mappedAgentObj);
-        agentMap.set(a.email, mappedAgentObj);
+        agentMap.set(a.emailId, mappedAgentObj);
       }
     }
 

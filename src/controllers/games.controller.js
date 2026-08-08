@@ -1,4 +1,52 @@
-import { pool } from '../config/mysql.js';
+import { Subscription } from '../models/Subscription.js';
+import { User } from '../models/User.js';
+
+const DUMMY_GAMES = [
+  {
+    id: '1',
+    name: 'Aviator',
+    slag: 'aviator',
+    order_no: '1',
+    detail: 'Predict how high the plane will fly and cash out before it crashes.',
+    image: 'aviator.png',
+    type: 'BOOK',
+    show_status: 'ACTIVE',
+    date_ts: '1690000000'
+  },
+  {
+    id: '2',
+    name: 'Roulette',
+    slag: 'roulette',
+    order_no: '2',
+    detail: 'Classic casino roulette game. Bet on numbers, colors, or sections.',
+    image: 'roulette.png',
+    type: 'BOOK',
+    show_status: 'ACTIVE',
+    date_ts: '1690000000'
+  },
+  {
+    id: '3',
+    name: 'Mines',
+    slag: 'mines',
+    order_no: '3',
+    detail: 'Uncover the gems and avoid the mines in this thrilling puzzle game.',
+    image: 'mines.png',
+    type: 'BOOK',
+    show_status: 'ACTIVE',
+    date_ts: '1690000000'
+  },
+  {
+    id: '4',
+    name: 'Ludo',
+    slag: 'ludo',
+    order_no: '4',
+    detail: 'Classic board game. Play with friends or against the computer.',
+    image: 'ludo.png',
+    type: 'BOOK',
+    show_status: 'ACTIVE',
+    date_ts: '1690000000'
+  }
+];
 
 export async function getGames(req, res) {
   try {
@@ -7,23 +55,14 @@ export async function getGames(req, res) {
       return res.status(401).json({ error: 'User email not found in token' });
     }
 
-    // 1. Get user integer id
-    const [userRows] = await pool.query('SELECT id FROM users WHERE email = ? LIMIT 1', [userEmail]);
-    if (userRows.length === 0) {
+    // Verify user exists in MongoDB User model
+    const user = await User.findOne({ $or: [{ emailId: userEmail }, { _id: userEmail }] });
+    if (!user) {
       return res.status(404).json({ error: 'User not found in database' });
     }
-    const userId = userRows[0].id;
 
-    // 2. Fetch all active games (type = 'BOOK')
-    const [gameRows] = await pool.query(
-      "SELECT id, name, slag, order_no, detail, image, type, show_status, date_ts FROM features WHERE type = 'BOOK' AND show_status = 'ACTIVE' ORDER BY CAST(order_no AS UNSIGNED) ASC"
-    );
-
-    // 3. Fetch user's subscriptions
-    const [subRows] = await pool.query(
-      'SELECT id, book_id, stage_status FROM subscription WHERE user_id = ?',
-      [userId]
-    );
+    // Fetch user's subscriptions from MongoDB
+    const subRows = await Subscription.find({ user_id: userEmail });
 
     // Create a map of book_id -> stage_status
     const subMap = {};
@@ -31,8 +70,8 @@ export async function getGames(req, res) {
       subMap[String(sub.book_id)] = sub.stage_status;
     }
 
-    // 4. Map subscription status to games
-    const games = gameRows.map(game => {
+    // Map subscription status to games
+    const games = DUMMY_GAMES.map(game => {
       const status = subMap[String(game.id)] || 'NONE';
       return {
         ...game,
@@ -40,7 +79,7 @@ export async function getGames(req, res) {
       };
     });
 
-    // 5. Sort games: DONE first, PENDING second, NONE last
+    // Sort games: DONE first, PENDING second, NONE last
     games.sort((a, b) => {
       const statusOrder = { 'DONE': 1, 'PENDING': 2, 'NONE': 3 };
       const orderA = statusOrder[a.subscriptionStatus] || 3;
@@ -48,7 +87,6 @@ export async function getGames(req, res) {
       if (orderA !== orderB) {
         return orderA - orderB;
       }
-      // If same status, maintain order_no
       return parseInt(a.order_no || 0, 10) - parseInt(b.order_no || 0, 10);
     });
 
@@ -72,45 +110,35 @@ export async function subscribeGame(req, res) {
       return res.status(401).json({ error: 'User email not found in token' });
     }
 
-    // 1. Get user integer id
-    const [userRows] = await pool.query('SELECT id FROM users WHERE email = ? LIMIT 1', [userEmail]);
-    if (userRows.length === 0) {
+    // Verify user exists in MongoDB User model
+    const user = await User.findOne({ $or: [{ emailId: userEmail }, { _id: userEmail }] });
+    if (!user) {
       return res.status(404).json({ error: 'User not found in database' });
     }
-    const userId = userRows[0].id;
 
-    // 2. Check if already subscribed or pending
-    const [existing] = await pool.query(
-      'SELECT id, stage_status FROM subscription WHERE user_id = ? AND book_id = ? LIMIT 1',
-      [userId, book_id]
-    );
+    // Check if already subscribed or pending
+    const existing = await Subscription.findOne({ user_id: userEmail, book_id: String(book_id) });
 
-    if (existing.length > 0) {
+    if (existing) {
       return res.status(400).json({ 
-        error: `Already have a subscription with status: ${existing[0].stage_status}` 
+        error: `Already have a subscription with status: ${existing.stage_status}` 
       });
     }
 
-    // 3. Insert new subscription with PENDING status
+    // Insert new subscription with PENDING status in MongoDB
     const dateTs = Math.floor(Date.now() / 1000).toString();
-    await pool.query(
-      `INSERT INTO subscription (
-        user_id, book_id, emp_id, username, password, 
-        stage_status, read_status, show_status, user_under, date_ts
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        String(userId),
-        String(book_id),
-        '1', // Default emp_id (admin/system)
-        '',  // Empty username until approved
-        '',  // Empty password until approved
-        'PENDING',
-        'PENDING',
-        'ACTIVE',
-        'ADMIN',
-        dateTs
-      ]
-    );
+    await Subscription.create({
+      user_id: userEmail,
+      book_id: String(book_id),
+      emp_id: '1',
+      username: '',
+      password: '',
+      stage_status: 'PENDING',
+      read_status: 'PENDING',
+      show_status: 'ACTIVE',
+      user_under: 'ADMIN',
+      date_ts: dateTs
+    });
 
     return res.json({ success: true, message: 'Subscription request submitted successfully' });
   } catch (err) {

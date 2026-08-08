@@ -1205,6 +1205,7 @@
             ? `<img class="avatar" src="${escapeHtmlAttr(user.avatar)}" alt="${escapeHtmlAttr(user.name)}" onerror="this.onerror=null; this.outerHTML='<div class=&quot;avatar&quot; style=&quot;background-color: ${avatarColor};&quot;>${initials}</div>';" style="object-fit: cover; border-radius: 50%;" />`
             : `<div class="avatar" style="background-color: ${avatarColor};">${initials}</div>`;
 
+          
           item.innerHTML = `
             ${avatarHtml}
             <div class="conv-details">
