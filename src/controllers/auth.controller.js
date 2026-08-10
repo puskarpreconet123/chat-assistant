@@ -140,6 +140,7 @@ export async function login(req, res) {
               mob: mob,
               agency_id: userAgencyId,
               agency_unq_id: userAgencyUnqId,
+              agentId: userAgencyUnqId,
               status: 'active'
             },
             { upsert: true }
@@ -195,6 +196,7 @@ export async function login(req, res) {
                         mob: u.mob,
                         agency_id: userAgencyId,
                         agency_unq_id: userAgencyUnqId,
+                        agentId: userAgencyUnqId,
                         status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
                       },
                       { upsert: true }
@@ -250,6 +252,7 @@ export async function login(req, res) {
                         mob: u.mob,
                         agency_id: userAgencyId,
                         agency_unq_id: userAgencyUnqId,
+                        agentId: userAgencyUnqId,
                         status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
                       },
                       { upsert: true }
@@ -305,6 +308,7 @@ export async function login(req, res) {
                         mob: u.mob,
                         agency_id: userAgencyIdVal,
                         agency_unq_id: userAgencyUnqIdVal,
+                        agentId: userAgencyUnqIdVal,
                         status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
                       },
                       { upsert: true }

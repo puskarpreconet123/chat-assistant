@@ -10,6 +10,24 @@ const UserSchema = new mongoose.Schema({
   img: { type: String, default: '' },
   agency_id: { type: String, default: '' },
   agency_unq_id: { type: String, default: '' },
+  agentId: {
+    type: String,
+    default: '',
+    get: function(val) {
+      return this.agency_unq_id || (this.agency_id ? `AGENCY-${this.agency_id}` : '') || val || '';
+    },
+    set: function(val) {
+      this.agency_unq_id = val || '';
+      if (val && val.includes('-')) {
+        const parts = val.split('-');
+        const lastPart = parts[parts.length - 1];
+        if (!isNaN(lastPart)) {
+          this.agency_id = lastPart;
+        }
+      }
+      return val || '';
+    }
+  },
   read_status: { type: String, default: 'READ' },
   verification: { type: String, default: 'DONE' },
   type: { type: String, default: 'USER' },
@@ -18,8 +36,8 @@ const UserSchema = new mongoose.Schema({
   time: { type: String }
 }, {
   timestamps: true,
-  toObject: { virtuals: true },
-  toJSON: { virtuals: true }
+  toObject: { virtuals: true, getters: true },
+  toJSON: { virtuals: true, getters: true }
 });
 
 UserSchema.virtual('avatar').get(function() {
@@ -32,20 +50,8 @@ UserSchema.virtual('status').get(function() {
   this.show_status = String(val).toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
 });
 
-UserSchema.virtual('agentId').get(function() {
-  return this.agency_unq_id || (this.agency_id ? `AGENCY-${this.agency_id}` : '');
-}).set(function(val) {
-  this.agency_unq_id = val || '';
-  if (val && val.includes('-')) {
-    const parts = val.split('-');
-    const lastPart = parts[parts.length - 1];
-    if (!isNaN(lastPart)) {
-      this.agency_id = lastPart;
-    }
-  }
-});
-
 // Implement custom queries/helpers to keep compatibility with existing codebase
+
 UserSchema.statics.findByIdAndUpdate = async function(id, updateData, options = {}) {
   const email = updateData.emailId || updateData.email || id;
   // If updateData contains agentId, map it to agency_unq_id / agency_id
@@ -58,7 +64,11 @@ UserSchema.statics.findByIdAndUpdate = async function(id, updateData, options = 
         updateData.agency_id = lastPart;
       }
     }
+  } else if (updateData.agency_unq_id) {
+    // If agency_unq_id is present but agentId is missing, populate agentId
+    updateData.agentId = updateData.agency_unq_id;
   }
+  
   if (updateData.status) {
     updateData.show_status = String(updateData.status).toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
   }

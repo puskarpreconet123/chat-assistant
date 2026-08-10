@@ -55,6 +55,7 @@ async function syncWithTelewiz(role, emailId, agentId) {
                   mob: u.mob,
                   agency_id: userAgencyId,
                   agency_unq_id: userAgencyUnqId,
+                  agentId: userAgencyUnqId,
                   status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
                 },
                 { upsert: true }
@@ -122,6 +123,7 @@ async function syncWithTelewiz(role, emailId, agentId) {
                     mob: u.mob,
                     agency_id: userAgencyId,
                     agency_unq_id: userAgencyUnqId,
+                    agentId: userAgencyUnqId,
                     status: uStatus === 'ACTIVE' ? 'active' : 'inactive'
                   },
                   { upsert: true }
@@ -210,6 +212,7 @@ export async function createUser(req, res) {
         mob: mob || '',
         agency_id: userAgencyId,
         agency_unq_id: userAgencyUnqId,
+        agentId: userAgencyUnqId,
         status: 'active'
       },
       { upsert: true, new: true }
@@ -246,7 +249,14 @@ export async function listUsers(req, res) {
     // Sync latest users and agents from Telewiz API
     await syncWithTelewiz(req.user.role, req.user.emailId, req.user.agentId);
 
-    let users = await User.find().sort({ createdAt: -1 });  //find({ type: 'USER' }).sort({ createdAt: -1 });
+    const filter = {
+      $or: [
+        { agency_unq_id: { $exists: true, $ne: '' } },
+        { agency_id: { $exists: true, $ne: '' } },
+        { agentId: { $exists: true, $ne: '' } }
+      ]
+    };
+    let users = await User.find(filter).sort({ createdAt: -1 });  //find({ type: 'USER' }).sort({ createdAt: -1 });
     //for future to get only their own users, we can add a field in user schema with agentid after auth is updated in Telewiz.
 
     // If the requesting user is an agent, filter the users list to only show users assigned to them!
@@ -295,10 +305,20 @@ export async function assignUsers(req, res) {
       return res.status(400).json({ error: `Agent with ID "${agentId}" does not exist` });
     }
 
+    // Extract agency numeric ID if present
+    let agencyId = '';
+    if (agentId && agentId.includes('-')) {
+      const parts = agentId.split('-');
+      const lastPart = parts[parts.length - 1];
+      if (!isNaN(lastPart)) {
+        agencyId = lastPart;
+      }
+    }
+
     // Update all users
     const result = await User.updateMany(
       { _id: { $in: emailIds } },
-      { $set: { agentId } }
+      { $set: { agentId, agency_unq_id: agentId, agency_id: agencyId } }
     );
 
     return res.json({

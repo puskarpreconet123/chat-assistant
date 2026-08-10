@@ -1198,7 +1198,7 @@
         if (isAgent) {
           usersToRender = usersToRender.filter(u => {
             const aId = u.agentId?._id || u.agentId;
-            return String(aId) === String(currentUser.emailId);
+            return String(aId) === String(currentUser.agentId || currentUser._id);
           });
         }
 
