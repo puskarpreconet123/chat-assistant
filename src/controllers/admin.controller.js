@@ -230,12 +230,21 @@ export async function createUser(req, res) {
 export async function listAgents(req, res) {
   try {
     const isAdmin = req.user && (req.user.role === 'admin' || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
-    if (!isAdmin) {
-      return res.status(403).json({ error: 'Access denied: Agents cannot view other agents.' });
-    }
-
+    
     // Sync latest users and agents from Telewiz API
     await syncWithTelewiz(req.user.role, req.user.emailId, req.user.agentId);
+
+    if (!isAdmin) {
+      // Return only admin agents to regular agents
+      const adminAgents = await Agent.find({
+        $or: [
+          { type: 'ADMIN' },
+          { _id: /ADMIN/i },
+          { emailId: /ADMIN/i }
+        ]
+      }).sort({ createdAt: -1 });
+      return res.json({ agents: adminAgents });
+    }
 
     const agents = await Agent.find().sort({ createdAt: -1 });
     return res.json({ agents });

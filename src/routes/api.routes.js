@@ -12,6 +12,7 @@ import * as messageController from '../controllers/message.controller.js';
 import * as voiceController from '../controllers/voice.controller.js';
 import * as imageController from '../controllers/image.controller.js';
 import * as gamesController from '../controllers/games.controller.js';
+import * as rechargeController from '../controllers/recharge.controller.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -145,5 +146,8 @@ router.get('/image/play-url', imageController.getImagePlayUrl);
 // Game and Subscription routes
 router.get('/games', gamesController.getGames);
 router.post('/games/subscribe', gamesController.subscribeGame);
+
+// Recharge routes
+router.post('/recharge/generate-qr', rechargeController.generateQrCode);
 
 

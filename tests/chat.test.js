@@ -529,6 +529,19 @@ async function runTests() {
               ]
             })
           };
+        } else if (body.action === 'get_qr_code') {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              success: true,
+              qr_available: true,
+              qr_image_url: "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=mock-test-upi",
+              qr_id: 5,
+              range_id: 2,
+              emp_id: body.agency_id || 23
+            })
+          };
         }
       }
       return originalFetch(url, options);
@@ -565,6 +578,83 @@ async function runTests() {
       assert.strictEqual(listUsersRes.status, 200);
       assert(Array.isArray(listUsersData.users));
       console.log('✔ Admin list users with Telewiz sync successful');
+
+      // ----------------------------------------------------
+      // TEST 13: Testing Recharge Request and QR Code Proxy
+      // ----------------------------------------------------
+      console.log('\n[Test 13] Testing Recharge Request and QR Code Proxy...');
+      const qrRes = await fetch(`${serverUrl}/api/v1/recharge/generate-qr`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ userId: TEST_USER_ID, bookId: '324', amount: 1000 })
+      });
+      const qrData = await qrRes.json();
+      assert.strictEqual(qrRes.status, 200);
+      assert.strictEqual(qrData.success, true);
+      assert.strictEqual(qrData.qr_available, true);
+      assert.strictEqual(qrData.qr_id, 5);
+      assert(qrData.qr_url, 'Should return qr_url');
+
+      // Test socket events
+      const rechargePromise = new Promise((resolve) => {
+        agentSocket.once('message:new', (msg) => {
+          console.log('✔ Realtime event message:new received on agent socket for recharge:', msg._id);
+          resolve(msg);
+        });
+      });
+
+      const rechargeMsgId = 'msg-recharge-test';
+      userSocket.emit('message:send', {
+        _id: rechargeMsgId,
+        conversationId: CONVERSATION_ID,
+        recipientId: TEST_AGENT_ID,
+        type: 'recharge',
+        text: '💸 Recharge Request: ₹1000 for Cricket Book 365 (UTR: 123456789012)',
+        recharge: {
+          userId: TEST_USER_ID,
+          bookId: '324',
+          bookName: 'Cricket Book 365',
+          amount: 1000,
+          transactionId: '123456789012',
+          proofImage: 'images/conv-1/proof.png'
+        }
+      });
+
+      // Process stream message
+      await processStreamMessage('stream-id-recharge', {
+        _id: rechargeMsgId,
+        conversationId: CONVERSATION_ID,
+        senderId: TEST_USER_ID,
+        senderType: 'user',
+        recipientId: TEST_AGENT_ID,
+        recipientType: 'agent',
+        type: 'recharge',
+        text: '💸 Recharge Request: ₹1000 for Cricket Book 365 (UTR: 123456789012)',
+        recharge: {
+          userId: TEST_USER_ID,
+          bookId: '324',
+          bookName: 'Cricket Book 365',
+          amount: 1000,
+          transactionId: '123456789012',
+          proofImage: 'images/conv-1/proof.png'
+        },
+        createdAt: new Date()
+      });
+
+      const rechargeMsg = await rechargePromise;
+      assert.strictEqual(rechargeMsg.type, 'recharge');
+      assert.strictEqual(rechargeMsg.recharge.amount, 1000);
+      assert.strictEqual(rechargeMsg.recharge.transactionId, '123456789012');
+
+      // Verify MongoDB document
+      const mongoRechargeMsg = await Message.findById(rechargeMsgId);
+      assert(mongoRechargeMsg, 'Recharge message document should exist in Mongo');
+      assert.strictEqual(mongoRechargeMsg.recharge.amount, 1000);
+      assert.strictEqual(mongoRechargeMsg.recharge.transactionId, '123456789012');
+      console.log('✔ Recharge Request flow test successful');
 
     } finally {
       global.fetch = originalFetch;

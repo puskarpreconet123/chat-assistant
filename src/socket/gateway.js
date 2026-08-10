@@ -106,7 +106,7 @@ export function setupSocketGateway(httpServer) {
           return socket.emit('error', errPayload);
         }
 
-        const { conversationId, recipientId, type = 'text', text, audio, image } = data;
+        const { conversationId, recipientId, type = 'text', text, audio, image, recharge } = data;
 
         if (!conversationId || !recipientId) {
           const errPayload = { error: 'conversationId and recipientId are required' };
@@ -114,7 +114,7 @@ export function setupSocketGateway(httpServer) {
           return socket.emit('error', errPayload);
         }
 
-        if (!['text', 'voice', 'image'].includes(type)) {
+        if (!['text', 'voice', 'image', 'recharge'].includes(type)) {
           const errPayload = { error: 'Invalid message type' };
           if (typeof ackCallback === 'function') ackCallback(errPayload);
           return socket.emit('error', errPayload);
@@ -134,6 +134,12 @@ export function setupSocketGateway(httpServer) {
 
         if (type === 'image' && (!image || !image.key)) {
           const errPayload = { error: 'Image message image key is required' };
+          if (typeof ackCallback === 'function') ackCallback(errPayload);
+          return socket.emit('error', errPayload);
+        }
+
+        if (type === 'recharge' && (!recharge || !recharge.userId || !recharge.amount || !recharge.transactionId || !recharge.proofImage)) {
+          const errPayload = { error: 'Recharge message requires userId, amount, transactionId, and proofImage' };
           if (typeof ackCallback === 'function') ackCallback(errPayload);
           return socket.emit('error', errPayload);
         }
@@ -159,17 +165,19 @@ export function setupSocketGateway(httpServer) {
           }
         } else {
           // If starting a new virtual conversation, validate authorization
+          const isSenderAdmin = role === 'admin' || String(emailId || '').toUpperCase().includes('ADMIN');
+          const isRecipientAdmin = String(recipientId || '').toUpperCase().includes('ADMIN');
+
           if (role === 'user') {
-            // Normal players can only start a chat with their assigned agent
-            if (recipientId !== agentId) {
+            // Normal players can only start a chat with their assigned agent (or admin!)
+            if (recipientId !== agentId && !isRecipientAdmin) {
               const errPayload = { error: 'Unauthorized: Users can only message their assigned agent.' };
               if (typeof ackCallback === 'function') ackCallback(errPayload);
               return socket.emit('error', errPayload);
             }
           } else if (role === 'agent' || role === 'admin') {
-            // Normal agents (non-admin) can only start a chat with users assigned to them
-            const isAdminSender = role === 'admin';
-            if (!isAdminSender) {
+            if (!isSenderAdmin && !isRecipientAdmin) {
+              // Normal agents (non-admin) can only start a chat with users assigned to them
               const userObj = await User.findOne({ emailId: recipientId });
               if (!userObj) {
                 const errPayload = { error: 'Recipient user not found.' };
@@ -211,6 +219,7 @@ export function setupSocketGateway(httpServer) {
           text: type === 'text' ? text : undefined,
           audio: type === 'voice' ? audio : undefined,
           image: type === 'image' ? image : undefined,
+          recharge: type === 'recharge' ? recharge : undefined,
           status: 'sent',
           createdAt,
           agentId: currentAgentId,
@@ -288,7 +297,11 @@ export function setupSocketGateway(httpServer) {
         const result = await Message.updateMany(filter, { $set: { status: 'read' } });
 
         // 2. Reset unread counter for current user in Conversation
-        const unreadField = (role === 'agent' || role === 'admin') ? 'unread.agent' : 'unread.user';
+        const conv = await Conversation.findById(conversationId);
+        let unreadField = 'unread.user';
+        if (conv && conv.agentId === emailId) {
+          unreadField = 'unread.agent';
+        }
         await Conversation.updateOne({ _id: conversationId }, { $set: { [unreadField]: 0 } });
 
         // 3. Relay read receipt back to sender's room

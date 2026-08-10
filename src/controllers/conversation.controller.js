@@ -33,8 +33,21 @@ export async function listConversations(req, res) {
     const agentIds = [...new Set(conversationsJson.map(c => c.agentId))].filter(Boolean);
 
     const userMap = new Map();
-    if (emailIds.length > 0) {
-      const users = await User.find({ _id: { $in: emailIds } });
+    const agentMap = new Map();
+
+    const allParticipantIds = [...new Set([...emailIds, ...agentIds])].filter(Boolean);
+
+    if (allParticipantIds.length > 0) {
+      const [users, agents] = await Promise.all([
+        User.find({ _id: { $in: allParticipantIds } }),
+        Agent.find({
+          $or: [
+            { emailId: { $in: allParticipantIds } },
+            { _id: { $in: allParticipantIds } }
+          ]
+        })
+      ]);
+
       for (const u of users) {
         userMap.set(u.emailId, {
           _id: u.emailId,
@@ -45,16 +58,7 @@ export async function listConversations(req, res) {
           avatar: u.avatar
         });
       }
-    }
 
-    const agentMap = new Map();
-    if (agentIds.length > 0) {
-      const agents = await Agent.find({
-        $or: [
-          { emailId: { $in: agentIds } },
-          { _id: { $in: agentIds } }
-        ]
-      });
       for (const a of agents) {
         const key = a._id || a.emailId;
         const mappedAgentObj = {
@@ -71,8 +75,11 @@ export async function listConversations(req, res) {
 
     // Populate user and agent details in the conversations list
     for (const c of conversationsJson) {
-      c.emailId = userMap.get(c.emailId) || { emailId: c.emailId, name: 'Unknown User' };
-      c.agentId = agentMap.get(c.agentId) || { emailId: c.agentId, name: 'Unknown Agent' };
+      const mappedEmailUser = userMap.get(c.emailId) || agentMap.get(c.emailId);
+      c.emailId = mappedEmailUser || { emailId: c.emailId, name: 'Unknown Participant' };
+
+      const mappedAgentUser = agentMap.get(c.agentId) || userMap.get(c.agentId);
+      c.agentId = mappedAgentUser || { emailId: c.agentId, name: 'Unknown Participant' };
     }
 
     return res.json({

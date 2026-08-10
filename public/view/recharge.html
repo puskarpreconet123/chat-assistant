@@ -196,6 +196,19 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #33343b; border-radius: 4px; }
+        
+        .qr-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #00e475;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
     <script>
         function setAmount(amount) {
@@ -250,6 +263,154 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateBookSelection();
         });
+
+        async function proceedToPayment() {
+            const checkedRadio = document.querySelector('input[name="book"]:checked');
+            let game = 'Cricket Book 365';
+            if (checkedRadio) {
+                const label = checkedRadio.closest('label');
+                const nameEl = label.querySelector('.book-details p');
+                if (nameEl) game = nameEl.textContent.trim();
+            }
+
+            const amountInput = document.getElementById('amount-input');
+            const amount = parseFloat(amountInput.value);
+            if (!amount || amount < 100) {
+                alert('Please enter a valid amount (minimum ₹100)');
+                return;
+            }
+
+            const container = document.getElementById('recharge-form-container');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12 gap-4">
+                    <div class="qr-spinner"></div>
+                    <div class="text-text-muted">Generating Secure QR Code...</div>
+                </div>
+            `;
+
+            const cached = localStorage.getItem('chat_identity');
+            if (!cached) {
+                alert('You must be logged in to recharge.');
+                location.reload();
+                return;
+            }
+            const parsed = JSON.parse(cached);
+            const currentToken = parsed.token;
+            const currentUser = parsed.user;
+            currentUser._id = currentUser._id || currentUser.emailId;
+
+            try {
+                const response = await fetch('/api/v1/recharge/generate-qr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        userId: currentUser._id,
+                        bookId: '324',
+                        amount: amount
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || data.error || 'Failed to generate QR');
+
+                if (data.qr_available === false) {
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-12 gap-4 text-center">
+                            <span class="material-symbols-outlined text-[64px] text-error" style="color: #ffb4ab;">info</span>
+                            <h2 class="font-headline-lg text-headline-lg text-error" style="color: #ffb4ab;">Cash Transaction Only</h2>
+                            <p class="font-body-md text-text-muted">${data.message || 'Online QR payment is disabled.'}</p>
+                            <button onclick="location.reload()" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-4">
+                                Go Back
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = `
+                    <section class="flex flex-col gap-4">
+                        <h2 class="font-body-md text-body-md text-text-primary font-semibold text-center">Scan QR to pay ₹${amount}</h2>
+                        
+                        <div class="flex justify-center my-2">
+                            <img src="${data.qr_url}" alt="Payment QR" class="w-48 h-48 border border-white/10 rounded-xl p-2 bg-white" />
+                        </div>
+                        
+                        <div class="flex flex-col gap-2">
+                            <label class="font-body-md text-sm text-text-muted">UTR / Transaction ID</label>
+                            <input id="utr-input" class="w-full bg-surface-raised border border-white/10 rounded-xl py-3 px-4 font-body-md text-text-primary focus:outline-none focus:ring-1 focus:ring-secondary-fixed-dim focus:border-secondary-fixed-dim transition-all" placeholder="Enter 12-digit UTR/TxID" required pattern="^[a-zA-Z0-9]{12}$" title="UTR must be exactly 12 alphanumeric characters">
+                        </div>
+                        
+                        <div class="flex flex-col gap-2">
+                            <label class="font-body-md text-sm text-text-muted">Upload Payment Receipt</label>
+                            <input id="proof-input" type="file" accept="image/*" class="w-full bg-surface-raised border border-white/10 rounded-xl py-3 px-4 font-body-md text-text-primary focus:outline-none focus:ring-1 focus:ring-secondary-fixed-dim focus:border-secondary-fixed-dim transition-all" required>
+                        </div>
+                        
+                        <button id="submit-proof-btn" onclick="submitRechargeProof('${game}', ${amount})" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-2">
+                            Submit Proof
+                        </button>
+                    </section>
+                `;
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12 gap-4 text-center">
+                        <span class="material-symbols-outlined text-[64px] text-error" style="color: #ffb4ab;">error</span>
+                        <h2 class="font-headline-lg text-headline-lg text-error" style="color: #ffb4ab;">Generation Failed</h2>
+                        <p class="font-body-md text-text-muted">${err.message || 'Please try again later.'}</p>
+                        <button onclick="location.reload()" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-4">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        async function submitRechargeProof(game, amount) {
+            const utrInput = document.getElementById('utr-input');
+            const utr = utrInput.value.trim();
+            if (!utr || !/^[a-zA-Z0-9]{12}$/.test(utr)) {
+                alert('Please enter a valid 12-digit alphanumeric UTR / Transaction ID.');
+                return;
+            }
+
+            const proofInput = document.getElementById('proof-input');
+            const file = proofInput.files[0];
+            if (!file) {
+                alert('Please upload payment receipt image.');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-proof-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading Receipt & Submitting...';
+
+            try {
+                if (typeof window.submitRechargeRequest !== 'function') {
+                    throw new Error('Chat widget is initializing, please try again in a moment.');
+                }
+
+                await window.submitRechargeRequest(game, amount, utr, file);
+                
+                const container = document.getElementById('recharge-form-container');
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12 gap-4 text-center">
+                        <span class="material-symbols-outlined text-[64px] text-secondary-fixed-dim">check_circle</span>
+                        <h2 class="font-headline-lg text-headline-lg text-secondary-fixed-dim">Recharge Submitted!</h2>
+                        <p class="font-body-md text-text-muted">Your payment verification request has been successfully sent to the agency.</p>
+                        <button onclick="window.location.href='records.html'" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-4">
+                            View History
+                        </button>
+                    </div>
+                `;
+            } catch (err) {
+                console.error(err);
+                alert('Failed to submit proof: ' + err.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Proof';
+            }
+        }
     </script>
     <script src="navbar.js"></script>
 </head>
@@ -341,12 +502,12 @@
 </div>
 </section>
 </div>
-<div class="md:col-span-5 flex flex-col gap-6 glass-panel rounded-xl p-6">
+<div id="recharge-form-container" class="md:col-span-5 flex flex-col gap-6 glass-panel rounded-xl p-6">
 <section class="flex flex-col gap-4">
 <h2 class="font-body-md text-body-md text-text-primary font-semibold">Select Amount</h2>
 <div class="relative">
 <span class="absolute left-4 top-1/2 -translate-y-1/2 font-label-numeric text-label-numeric text-primary text-lg">₹</span>
-<input id="amount-input" class="w-full bg-surface-raised border border-white/10 rounded-xl py-4 pl-10 pr-4 font-label-numeric text-label-numeric text-text-primary focus:outline-none focus:ring-1 focus:ring-secondary-fixed-dim focus:border-secondary-fixed-dim transition-all placeholder:text-surface-variant text-xl" placeholder="Enter amount..." type="number">
+<input id="amount-input" class="w-full bg-surface-raised border border-white/10 rounded-xl py-4 pl-10 pr-4 font-label-numeric text-label-numeric text-text-primary focus:outline-none focus:ring-1 focus:ring-secondary-fixed-dim focus:border-secondary-fixed-dim transition-all placeholder:text-surface-variant text-xl" placeholder="Enter amount..." type="number" min="10" value="500">
 </div>
 <div class="grid grid-cols-2 gap-3">
 <button onclick="setAmount(500)" class="bg-surface-raised hover:bg-surface-variant/50 border border-white/5 rounded-lg py-3.5 font-label-numeric text-label-numeric text-on-surface hover:text-primary transition-all duration-200">₹500</button>
@@ -355,8 +516,8 @@
 <button onclick="setAmount(10000)" class="bg-surface-raised hover:bg-surface-variant/50 border border-white/5 rounded-lg py-3.5 font-label-numeric text-label-numeric text-on-surface hover:text-primary transition-all duration-200">₹10,000</button>
 </div>
 </section>
-<button onclick="window.location.href='records.html'" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-2">
-                Send
+<button onclick="proceedToPayment()" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-2">
+                Proceed to Pay
             </button>
 </div>
 </div>

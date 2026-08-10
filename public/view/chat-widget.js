@@ -337,8 +337,19 @@
       cursor: pointer;
       font-size: 0.9rem;
       flex-shrink: 0;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .btn-widget-icon:hover { background: #f1f5f9; }
+    .btn-widget-icon:hover {
+      background: #f1f5f9;
+      transform: scale(1.08);
+      border-color: var(--primary);
+    }
+    .btn-widget-icon img {
+      transition: transform 0.2s ease;
+    }
+    .btn-widget-icon:hover img {
+      transform: scale(1.05);
+    }
 
     .presence-online {
       color: var(--status-online);
@@ -485,6 +496,26 @@
     }
     .quick-form-submit-btn:hover { background: var(--primary-hover); }
 
+    .qr-loader-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+      gap: 0.75rem;
+      color: #64748b;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .qr-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #f1f5f9;
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -586,8 +617,8 @@
           <div class="input-bar-widget">
             <input type="text" id="widgetMsgInput" placeholder="Type a message..." />
             <button class="btn-widget" onclick="sendWidgetText()">Send</button>
-            <button class="btn-widget-icon" onclick="sendWidgetVoice()" title="Send Voice Simulation">🎙️</button>
-            <button class="btn-widget-icon" onclick="sendWidgetImage()" title="Send Image">📷</button>
+            <button class="btn-widget-icon" onclick="sendWidgetVoice()" title="Send Voice Simulation" style="display: inline-flex; align-items: center; justify-content: center;"><img src="/view/images/mic.svg?v=2" style="width: 20px; height: 20px;" /></button>
+            <button class="btn-widget-icon" onclick="sendWidgetImage()" title="Send Image" style="display: inline-flex; align-items: center; justify-content: center;"><img src="/view/images/image.svg?v=2" style="width: 20px; height: 20px;" /></button>
             <input type="file" id="widgetImageFileInput" accept="image/*" style="display:none" onchange="uploadWidgetImage(this.files[0])" />
           </div>
         </div>
@@ -640,6 +671,16 @@
     return escaped;
   }
 
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   // Socket Connection
   function connectWebsocket() {
     if (socket) socket.disconnect();
@@ -647,12 +688,16 @@
 
     socket = io({
       auth: { token: currentToken },
-      transports: ['websocket']
+      transports: ['websocket', 'polling']
     });
 
     socket.on('connect', () => {
       console.log('Socket connected successfully in widget');
       loadConversations();
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('Socket connected error in widget:', err.message);
     });
 
     socket.on('message:new', (msg) => {
@@ -900,6 +945,83 @@
     `;
   }
 
+  function createRechargeCardHtml(msg) {
+    const recharge = msg.recharge || {};
+    const bookName = recharge.bookName || 'Cricket Book 365';
+    const amount = recharge.amount || 0;
+    const transactionId = recharge.transactionId || 'N/A';
+    const userId = recharge.userId || 'N/A';
+    const proofUrl = recharge.proofImageCdnUrl || recharge.proofImage || '';
+
+    let proofImageHtml = '';
+    if (proofUrl) {
+      proofImageHtml = `
+        <div style="margin-top: 8px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #0f172a; position: relative; height: 110px; cursor: pointer;" onclick="window.open('${escapeHtmlAttr(proofUrl)}', '_blank')">
+          <img src="${escapeHtmlAttr(proofUrl)}" alt="Payment Proof" style="width: 100%; height: 100%; object-fit: cover;" />
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); padding: 4px; text-align: center; font-size: 0.65rem; color: #34d399; font-weight: bold;">🔍 Click to View Receipt</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="recharge-card" style="
+        background: #1e293b;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        font-family: 'Inter', sans-serif;
+        color: #f8fafc;
+        min-width: 230px;
+        max-width: 270px;
+        margin-top: 4px;
+        text-align: left;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #10b981, #059669);
+          padding: 8px 12px;
+          font-weight: 700;
+          font-size: 0.75rem;
+          letter-spacing: 0.05em;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          text-transform: uppercase;
+        ">
+          <span>💸 Recharge Request</span>
+          <span style="
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+          ">Pending</span>
+        </div>
+        
+        <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 3px;">
+              <span style="color: #94a3b8;">User ID:</span>
+              <span style="font-weight: 600; color: #f1f5f9;">${escapeHtml(userId)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 3px;">
+              <span style="color: #94a3b8;">Game Book:</span>
+              <span style="font-weight: 600; color: #f1f5f9;">${escapeHtml(bookName)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 3px;">
+              <span style="color: #94a3b8;">Amount:</span>
+              <span style="font-weight: 700; color: #34d399; font-size: 0.85rem;">₹${escapeHtml(amount)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 3px;">
+              <span style="color: #94a3b8;">UTR / TxID:</span>
+              <span style="font-weight: 600; color: #f1f5f9; font-family: monospace;">${escapeHtml(transactionId)}</span>
+            </div>
+          </div>
+          ${proofImageHtml}
+        </div>
+      </div>
+    `;
+  }
+
   function appendMessageBubble(msg) {
     const msgEl = document.getElementById('widgetMessages');
     const empty = msgEl.querySelector('div[style*="margin:auto"]');
@@ -926,6 +1048,8 @@
       contentHtml = createVoicePlayerHtml(msg);
     } else if (msg.type === 'image') {
       contentHtml = `<img src="${msg.image?.cdnUrl || msg.image?.key}" alt="Image" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 4px; display: block; cursor: pointer;" onclick="window.open(this.src, '_blank')" />`;
+    } else if (msg.type === 'recharge') {
+      contentHtml = createRechargeCardHtml(msg);
     }
 
     bubble.innerHTML = `
@@ -1191,7 +1315,7 @@
     
     const voiceBtn = document.querySelector('.btn-widget-icon[onclick="sendWidgetVoice()"]');
     if (voiceBtn) {
-      voiceBtn.innerHTML = '🎙️';
+      voiceBtn.innerHTML = '<img src="/view/images/mic.svg?v=2" style="width: 20px; height: 20px;" />';
       voiceBtn.style.background = '';
       voiceBtn.style.color = '';
     }
@@ -1442,6 +1566,8 @@
     }
   }
 
+
+
   // Quick forms
   function openQuickForm(type) {
     const overlay = document.getElementById('quickFormOverlay');
@@ -1453,30 +1579,29 @@
     if (type === 'deposit') {
       title.innerHTML = '💸 Recharge Account';
       body.innerHTML = `
-        <form onsubmit="submitDepositForm(event)" style="display:flex; flex-direction:column; gap:0.75rem;">
+        <form id="widgetDepositFormStep1" onsubmit="generateWidgetQR(event)" style="display:flex; flex-direction:column; gap:0.75rem;">
           <div class="quick-form-field">
             <label>Select Game</label>
             <select id="depGame" required>
-              <option value="Royal Blackjack">Royal Blackjack</option>
-              <option value="Mega Jackpot Slots">Mega Jackpot Slots</option>
-              <option value="Texas Hold'em Poker">Texas Hold'em Poker</option>
+              <option value="Cricket Book 365">Cricket Book 365</option>
+              <option value="Lotus Exchange">Lotus Exchange</option>
+              <option value="Diamond Casino">Diamond Casino</option>
+              <option value="Sky Exchange">Sky Exchange</option>
+              <option value="Fairplay Book">Fairplay Book</option>
+              <option value="Premium Sports Book">Premium Sports Book</option>
             </select>
           </div>
           <div class="quick-form-field">
             <label>Recharge Amount (₹)</label>
             <div style="display: flex; gap: 0.35rem; margin-bottom: 0.35rem;">
-              <button type="button" onclick="setQuickAmount(100)" class="btn-amount-pre">₹100</button>
               <button type="button" onclick="setQuickAmount(500)" class="btn-amount-pre">₹500</button>
               <button type="button" onclick="setQuickAmount(1000)" class="btn-amount-pre">₹1000</button>
               <button type="button" onclick="setQuickAmount(5000)" class="btn-amount-pre">₹5000</button>
+              <button type="button" onclick="setQuickAmount(10000)" class="btn-amount-pre">₹10000</button>
             </div>
-            <input type="number" id="depAmount" placeholder="Enter amount" required min="1" />
+            <input type="number" id="depAmount" placeholder="Enter amount" required min="10" />
           </div>
-          <div class="quick-form-field">
-            <label>UTR / Transaction ID</label>
-            <input type="text" id="depTxId" placeholder="Enter transaction reference or UTR" required />
-          </div>
-          <button type="submit" class="quick-form-submit-btn">Submit Recharge Request</button>
+          <button type="submit" class="quick-form-submit-btn">Generate Payment QR</button>
         </form>
       `;
     } else if (type === 'issue') {
@@ -1505,6 +1630,261 @@
     }
   }
 
+  async function generateWidgetQR(e) {
+    e.preventDefault();
+    const game = document.getElementById('depGame').value;
+    const amount = document.getElementById('depAmount').value;
+    
+    const overlay = document.getElementById('quickFormOverlay');
+    const body = overlay.querySelector('.quick-form-body');
+    
+    // Show Loading Animation
+    body.innerHTML = `
+      <div class="qr-loader-container">
+        <div class="qr-spinner"></div>
+        <div>Generating secure QR code...</div>
+      </div>
+    `;
+    
+    try {
+      const response = await fetch('/api/v1/recharge/generate-qr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentToken}`
+        },
+        body: JSON.stringify({
+          userId: currentUser._id,
+          bookId: '324', // Default
+          amount: amount
+        })
+      });
+      
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to generate QR');
+      }
+
+      if (data.qr_available === false) {
+        body.innerHTML = `
+          <div style="text-align: center; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: center;">
+            <div style="font-size: 2rem;">💸</div>
+            <div style="font-size: 0.85rem; font-weight: bold; color: #ef4444; word-break: break-word;">${escapeHtml(data.message || 'Only Cash Transaction Available.')}</div>
+            <p style="font-size: 0.75rem; color: #64748b; margin: 0; line-height: 1.4;">Online QR payment is currently disabled for this transaction. Please contact support or your agent for cash deposit options.</p>
+            <button type="button" onclick="closeQuickForm()" style="margin-top: 0.5rem; background: #64748b; color: white; border: none; padding: 0.4rem 1.25rem; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.8rem;">Close</button>
+          </div>
+        `;
+        return;
+      }
+      
+      // Render Step 2
+      body.innerHTML = `
+        <form onsubmit="submitDepositForm(event)" style="display:flex; flex-direction:column; gap:0.75rem;">
+          <input type="hidden" id="depGame" value="${game}" />
+          <input type="hidden" id="depAmount" value="${amount}" />
+          
+          <div style="text-align: center; margin: 0.25rem 0;">
+            <div style="font-size: 0.75rem; color: #64748b; font-weight: bold; margin-bottom: 0.35rem; text-transform: uppercase;">Scan to Pay ₹${amount}</div>
+            <img src="${data.qr_url}" alt="Payment QR" style="width: 140px; height: 140px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);" />
+          </div>
+
+          <div class="quick-form-field">
+            <label>UTR / Transaction ID</label>
+            <input type="text" id="depTxId" placeholder="Enter 12-digit UTR/TxID" required pattern="^[a-zA-Z0-9]{12}$" title="UTR/Transaction ID must be exactly 12 alphanumeric characters" />
+          </div>
+
+          <div class="quick-form-field">
+            <label>Upload Payment Receipt</label>
+            <input type="file" id="depProofFile" accept="image/*" required style="font-size: 0.75rem; padding: 0.35rem;" />
+          </div>
+
+          <button id="depSubmitBtn" type="submit" class="quick-form-submit-btn">Submit Recharge Request</button>
+        </form>
+      `;
+    } catch (err) {
+      console.error(err);
+      body.innerHTML = `
+        <div style="text-align: center; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: center;">
+          <div style="font-size: 2rem; color: #ef4444;">⚠️</div>
+          <div style="font-size: 0.85rem; font-weight: bold; color: #ef4444; word-break: break-word;">Having Trouble Generating QR</div>
+          <p style="font-size: 0.75rem; color: #64748b; margin: 0; line-height: 1.4;">${escapeHtml(err.message || 'Please try again later.')}</p>
+          <div style="display: flex; gap: 0.5rem; width: 100%; margin-top: 0.5rem;">
+            <button type="button" onclick="openQuickForm('deposit')" style="flex: 1; background: var(--primary); color: white; border: none; padding: 0.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.8rem;">Retry</button>
+            <button type="button" onclick="closeQuickForm()" style="flex: 1; background: #64748b; color: white; border: none; padding: 0.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.8rem;">Close</button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  async function ensureWidgetConnectedAndGetConversation() {
+    if (!socket || !socket.connected) {
+      connectWebsocket();
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Connection timed out')), 6000);
+        socket.once('connect', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+      });
+    }
+
+    if (!activeConversation) {
+      const listRes = await fetch('/api/v1/conversations', {
+        headers: { Authorization: `Bearer ${currentToken}` }
+      });
+      const listData = await listRes.json();
+      const list = listData.conversations || [];
+
+      if (list.length > 0) {
+        activeConversation = list[0];
+      } else if (currentUser && currentUser.agentId) {
+        activeConversation = {
+          _id: `conv-virtual-${currentUser.agentId}-${currentUser._id}`,
+          agentId: currentUser.agentId,
+          emailId: currentUser._id,
+          isVirtual: true,
+          lastMessageAt: new Date(0).toISOString()
+        };
+      } else {
+        throw new Error('No assigned agent found to send recharge request to.');
+      }
+    }
+    return activeConversation;
+  }
+
+  async function submitRechargeRequest(game, amount, txId, file) {
+    const conv = await ensureWidgetConnectedAndGetConversation();
+    const partner = currentUser.role === 'agent' ? conv.emailId : conv.agentId;
+    const recipientId = partner?._id || partner;
+    const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
+    const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
+    const conversationId = conv._id;
+    const messageId = 'msg-recharge-' + Date.now();
+
+    // 1. Get presigned URL
+    const presignedRes = await fetch('/api/v1/image/presigned-url', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${currentToken}`
+      },
+      body: JSON.stringify({ conversationId, mimeType: file.type || 'image/jpeg' })
+    });
+    
+    if (!presignedRes.ok) throw new Error('Failed to get upload URL');
+    const presignedData = await presignedRes.json();
+
+    let uploadRes;
+    let finalCdnUrl = presignedData.cdnUrl;
+    let finalFileKey = presignedData.fileKey;
+
+    try {
+      // 2. Upload file
+      uploadRes = await fetch(presignedData.uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'image/jpeg'
+        },
+        body: file
+      });
+      if (!uploadRes.ok) throw new Error('S3 Upload failed');
+    } catch (s3Err) {
+      console.warn('S3 upload failed, falling back to local mock upload:', s3Err);
+      const extension = file.type ? file.type.split('/')[1] || 'jpeg' : 'jpeg';
+      const mockKey = `images/${conversationId}/${currentUser._id || 'anonymous'}/${Date.now()}-${Math.floor(Math.random() * 1000)}.${extension}`;
+      const mockUploadUrl = `/api/v1/image/upload-mock?key=${mockKey}`;
+      
+      uploadRes = await fetch(mockUploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'image/jpeg'
+        },
+        body: file
+      });
+      if (!uploadRes.ok) throw new Error('Local mock upload fallback failed');
+      
+      finalFileKey = mockKey;
+      finalCdnUrl = `/uploads/${mockKey}`;
+    }
+
+    const localPreviewUrl = URL.createObjectURL(file);
+
+    // 3. Construct recharge payload
+    const rechargeObj = {
+      userId: currentUser._id,
+      bookId: '324',
+      bookName: game,
+      amount: Number(amount),
+      transactionId: txId,
+      proofImage: finalFileKey
+    };
+
+    const msgObj = {
+      _id: messageId,
+      conversationId,
+      senderId: currentUser._id,
+      senderType: currentUser.role,
+      type: 'recharge',
+      text: `💸 Recharge Request: ₹${amount} for ${game} (UTR: ${txId})`,
+      recharge: {
+        ...rechargeObj,
+        proofImageCdnUrl: localPreviewUrl
+      },
+      status: 'sent',
+      createdAt: new Date()
+    };
+
+    if (conv.isVirtual) {
+      conv.isVirtual = false;
+      const msgEl = document.getElementById('widgetMessages');
+      if (msgEl) msgEl.innerHTML = '';
+    }
+
+    // 4. Render locally if active convo is this one
+    const msgEl = document.getElementById('widgetMessages');
+    if (msgEl && activeConversation && activeConversation._id === conversationId) {
+      appendMessageBubble(msgObj);
+    }
+
+    // 5. Send via websocket
+    socket.emit('message:send', {
+      _id: messageId,
+      conversationId,
+      recipientId,
+      type: 'recharge',
+      text: msgObj.text,
+      recharge: rechargeObj
+    });
+
+    return msgObj;
+  }
+
+  async function submitDepositForm(e) {
+    e.preventDefault();
+    const game = document.getElementById('depGame').value;
+    const amount = document.getElementById('depAmount').value;
+    const txId = document.getElementById('depTxId').value.trim();
+    const fileInput = document.getElementById('depProofFile');
+    const file = fileInput.files[0];
+    
+    if (!file) return alert('Payment receipt image is required.');
+    
+    const submitBtn = document.getElementById('depSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading Receipt & Submitting...';
+    
+    try {
+      await submitRechargeRequest(game, amount, txId, file);
+      closeQuickForm();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit recharge request: ' + err.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Recharge Request';
+    }
+  }
+
   function setQuickAmount(amount) {
     const input = document.getElementById('depAmount');
     if (input) input.value = amount;
@@ -1512,18 +1892,6 @@
 
   function closeQuickForm() {
     document.getElementById('quickFormOverlay').style.display = 'none';
-  }
-
-  function submitDepositForm(e) {
-    e.preventDefault();
-    const game = document.getElementById('depGame').value;
-    const amount = document.getElementById('depAmount').value;
-    const txId = document.getElementById('depTxId').value;
-    
-    const formattedMessage = `📊 *Recharge Request*\\n• *Game:* \${game}\\n• *Amount:* ₹\${amount}\\n• *UTR / Transaction ID:* \${txId}\\n• *Status:* Pending Verification`;
-    
-    sendFormMessage(formattedMessage);
-    closeQuickForm();
   }
 
   function submitIssueForm(e) {
@@ -1578,8 +1946,11 @@
   window.openQuickForm = openQuickForm;
   window.closeQuickForm = closeQuickForm;
   window.setQuickAmount = setQuickAmount;
+  window.generateWidgetQR = generateWidgetQR;
   window.submitDepositForm = submitDepositForm;
   window.submitIssueForm = submitIssueForm;
+  window.ensureWidgetConnectedAndGetConversation = ensureWidgetConnectedAndGetConversation;
+  window.submitRechargeRequest = submitRechargeRequest;
 
   // 4. Initial connection triggers
   const chatTrigger = document.querySelector('button.fab-pulse') || document.querySelector('button.fixed.bottom-8.right-8');

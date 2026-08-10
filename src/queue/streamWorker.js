@@ -40,6 +40,7 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       text,
       audio,
       image,
+      recharge,
       createdAt = new Date(),
       agentId,
       emailId,
@@ -59,9 +60,13 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       text,
       audio,
       image,
+      recharge,
       status: 'sent',
       createdAt: new Date(createdAt)
     });
+
+    const isRecipientAgent = recipientId === agentId;
+    const incField = isRecipientAgent ? 'unread.agent' : 'unread.user';
 
     // 2. Upsert Conversation & update unread count + lastMessageAt
     await Conversation.findByIdAndUpdate(
@@ -73,7 +78,7 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
           lastMessageAt: new Date(createdAt)
         },
         $inc: {
-          [`unread.${recipientType}`]: 1
+          [incField]: 1
         }
       },
       { upsert: true, new: true }
@@ -98,6 +103,19 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
           messageObj.image.cdnUrl = signedData.url;
         } catch (err) {
           messageObj.image.cdnUrl = `${config.s3.cdnBaseUrl}/${messageObj.image.key}`;
+        }
+      }
+    }
+    if (messageObj.type === 'recharge' && messageObj.recharge && messageObj.recharge.proofImage) {
+      const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true';
+      if (isMock) {
+        messageObj.recharge.proofImageCdnUrl = `/uploads/${messageObj.recharge.proofImage}`;
+      } else {
+        try {
+          const signedData = await generateImageDownloadUrl({ fileKey: messageObj.recharge.proofImage });
+          messageObj.recharge.proofImageCdnUrl = signedData.url;
+        } catch (err) {
+          messageObj.recharge.proofImageCdnUrl = `${config.s3.cdnBaseUrl}/${messageObj.recharge.proofImage}`;
         }
       }
     }
