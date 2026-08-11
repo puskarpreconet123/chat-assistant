@@ -5,7 +5,7 @@ const MessageSchema = new mongoose.Schema(
     _id: { type: String, required: true },
     conversationId: { type: String, required: true, ref: 'Conversation' },
     senderId: { type: String, required: true },
-    senderType: { type: String, required: true, enum: ['agent', 'user'] },
+    senderType: { type: String, required: true, enum: ['agent', 'user', 'admin'] },
     type: { type: String, required: true, enum: ['text', 'voice', 'image', 'recharge'] },
     text: { type: String },
     audio: {
