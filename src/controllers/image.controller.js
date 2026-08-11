@@ -4,7 +4,9 @@ import { Agent } from '../models/Agent.js';
 
 export async function getImageUploadUrl(req, res) {
   try {
-    const { conversationId, mimeType = 'image/jpeg' } = req.body;
+    let { conversationId, mimeType = 'image/jpeg' } = req.body;
+    if (conversationId) conversationId = String(conversationId).trim();
+    if (mimeType) mimeType = String(mimeType).trim();
     const senderId = req.user.emailId;
 
     if (!conversationId) {
@@ -41,10 +43,11 @@ export async function getImageUploadUrl(req, res) {
 
 export async function getImagePlayUrl(req, res) {
   try {
-    const { key } = req.query;
+    let { key } = req.query;
     if (!key) {
       return res.status(400).json({ error: 'key query parameter is required' });
     }
+    key = String(key).trim();
 
     // Verify key participant authorization
     const userId = req.user.emailId;
