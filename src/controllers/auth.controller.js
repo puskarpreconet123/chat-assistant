@@ -187,8 +187,15 @@ export async function login(req, res) {
                       { upsert: true }
                     );
                   } else {
-                    const userAgencyId = u.agency_id || '';
-                    const userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
+                    const existingUser = await User.findOne({ $or: [{ _id: u.email }, { emailId: u.email }] });
+                    let userAgencyId = u.agency_id || '';
+                    let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
+
+                    if (!userAgencyId && existingUser && (existingUser.agency_id || existingUser.agency_unq_id)) {
+                      userAgencyId = existingUser.agency_id || '';
+                      userAgencyUnqId = existingUser.agency_unq_id || '';
+                    }
+
                     await User.findByIdAndUpdate(
                       u.email,
                       {
