@@ -784,7 +784,7 @@
         });
         if (!hasConvoWithAgent) {
           list.push({
-            _id: `conv-virtual-${assignedAgentId}-${currentUser._id}`,
+            _id: `conv-${assignedAgentId}-${currentUser._id}`,
             agentId: assignedAgentId,
             emailId: currentUser._id,
             isVirtual: true,
@@ -1768,7 +1768,7 @@
         activeConversation = list[0];
       } else if (currentUser && currentUser.agentId) {
         activeConversation = {
-          _id: `conv-virtual-${currentUser.agentId}-${currentUser._id}`,
+          _id: `conv-${currentUser.agentId}-${currentUser._id}`,
           agentId: currentUser.agentId,
           emailId: currentUser._id,
           isVirtual: true,

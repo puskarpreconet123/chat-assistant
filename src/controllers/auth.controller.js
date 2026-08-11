@@ -104,6 +104,11 @@ export async function login(req, res) {
         const mob = remoteUser.mob || remoteUser.mobile || remoteUser.phone || '';
         const displayName = remoteUser.name || name || email;
 
+        let existingUser = null;
+        if (role === 'user') {
+          existingUser = await User.findOne({ $or: [{ _id: email }, { emailId: email }] });
+        }
+
         if (role === 'agent' || role === 'admin') {
           const agencyUnqId = remoteUser.agency_unq_id || (remoteRole === 'ADMIN' && remoteUser.id ? `ADMIN-${remoteUser.id}` : (remoteRole === 'AGENCY' && remoteUser.id ? `AGENCY-${remoteUser.id}` : remoteUser.id || email));
           foundId = agencyUnqId;
@@ -126,13 +131,13 @@ export async function login(req, res) {
         } else {
           // It's a player/user
           foundId = email;
-          const userAgencyId = remoteUser.agency_id || '';
-          let userAgencyUnqId = remoteUser.agency_unq_id;
+          const userAgencyId = remoteUser.agency_id || (existingUser ? existingUser.agency_id : '') || '';
+          let userAgencyUnqId = remoteUser.agency_unq_id || (existingUser ? existingUser.agency_unq_id : '');
           if (!userAgencyUnqId && userAgencyId) {
             const agentDoc = await Agent.findOne({ id: Number(userAgencyId) });
             userAgencyUnqId = agentDoc ? agentDoc._id : '';
           }
-          agentId = userAgencyUnqId;
+          agentId = userAgencyUnqId || '';
           name = displayName;
 
           await User.findByIdAndUpdate(
@@ -278,11 +283,12 @@ export async function login(req, res) {
                 }
               }
             }
-          } else if (role === 'user' && remoteUser.agency_id) {
+          } else if (role === 'user' && (remoteUser.agency_id || (existingUser && existingUser.agency_id))) {
+            const syncAgencyId = remoteUser.agency_id || (existingUser && existingUser.agency_id);
             const syncRes = await fetch(config.phpApiUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'get_by_agency_id', agency_id: String(remoteUser.agency_id) })
+              body: JSON.stringify({ action: 'get_by_agency_id', agency_id: String(syncAgencyId) })
             });
             if (syncRes.ok) {
               const syncData = await syncRes.json();

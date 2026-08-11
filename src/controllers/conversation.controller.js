@@ -87,12 +87,50 @@ export async function listConversations(req, res) {
       c.participant1Details = p1Details;
       c.participant2Details = p2Details;
 
-      const isP1CurrentUser = c.participant1 === currentUserId;
-      c.agentId = isP1CurrentUser ? p1Details : p2Details;
-      c.emailId = isP1CurrentUser ? p2Details : p1Details;
+      // Determine who is the agent and who is the user
+      let agentDetails = null;
+      let userDetails = null;
+      let isP1Agent = false;
+
+      if (agentMap.has(c.participant1)) {
+        agentDetails = p1Details;
+        userDetails = p2Details;
+        isP1Agent = true;
+      } else if (agentMap.has(c.participant2)) {
+        agentDetails = p2Details;
+        userDetails = p1Details;
+        isP1Agent = false;
+      } else {
+        // Fallback based on current user's role
+        const isCurrentUserAgent = req.user.role === 'agent' || req.user.role === 'admin';
+        if (isCurrentUserAgent) {
+          if (c.participant1 === currentUserId) {
+            agentDetails = p1Details;
+            userDetails = p2Details;
+            isP1Agent = true;
+          } else {
+            agentDetails = p2Details;
+            userDetails = p1Details;
+            isP1Agent = false;
+          }
+        } else {
+          if (c.participant1 === currentUserId) {
+            userDetails = p1Details;
+            agentDetails = p2Details;
+            isP1Agent = false;
+          } else {
+            userDetails = p2Details;
+            agentDetails = p1Details;
+            isP1Agent = true;
+          }
+        }
+      }
+
+      c.agentId = agentDetails;
+      c.emailId = userDetails;
       c.unread = {
-        agent: isP1CurrentUser ? (c.unread1 || 0) : (c.unread2 || 0),
-        user: isP1CurrentUser ? (c.unread2 || 0) : (c.unread1 || 0)
+        agent: isP1Agent ? (c.unread1 || 0) : (c.unread2 || 0),
+        user: isP1Agent ? (c.unread2 || 0) : (c.unread1 || 0)
       };
     }
 
