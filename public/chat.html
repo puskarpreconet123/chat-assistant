@@ -1435,11 +1435,25 @@
         if (globalConversations.length > 0) {
           globalConversations.forEach((conv, index) => {
             const currentUserId = currentUser._id || currentUser.emailId;
+            const isAdmin = currentUser.role === 'admin' || (currentUser.role === 'agent' && String(currentUser._id || currentUser.emailId).toUpperCase().includes('ADMIN'));
+
             const convAgentId = conv.agentId?._id || conv.agentId;
             const convEmailId = conv.emailId?._id || conv.emailId;
             const partner = convAgentId === currentUserId ? conv.emailId : conv.agentId;
-            const partnerName = partner?.name || partner || 'Chat Partner';
-            const unreadCount = convAgentId === currentUserId ? (conv.unread?.agent || 0) : (conv.unread?.user || 0);
+            
+            let partnerName = partner?.name || partner || 'Chat Partner';
+            if (isAdmin && conv.participant1 && conv.participant2 && conv.participant1 !== currentUserId && conv.participant2 !== currentUserId) {
+              const p1Name = conv.participant1Details?.name || conv.participant1;
+              const p2Name = conv.participant2Details?.name || conv.participant2;
+              partnerName = `${p1Name} ⇄ ${p2Name}`;
+            }
+
+            let unreadCount = 0;
+            if (conv.participant1 === currentUserId || conv.participant2 === currentUserId) {
+              unreadCount = convAgentId === currentUserId ? (conv.unread?.agent || 0) : (conv.unread?.user || 0);
+            } else {
+              unreadCount = (conv.unread1 || 0) + (conv.unread2 || 0);
+            }
             
             const initials = getInitials(partnerName);
             const avatarColor = getAvatarColor(partnerName);
