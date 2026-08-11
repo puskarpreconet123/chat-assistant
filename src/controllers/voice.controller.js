@@ -1,5 +1,6 @@
 import { generatePresignedUploadUrl, generatePresignedDownloadUrl } from '../services/voice.service.js';
 import { Conversation } from '../models/Conversation.js';
+import { Agent } from '../models/Agent.js';
 
 export async function getVoiceUploadUrl(req, res) {
   try {
