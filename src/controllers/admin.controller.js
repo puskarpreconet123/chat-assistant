@@ -259,19 +259,21 @@ export async function listUsers(req, res) {
     // Sync latest users and agents from Telewiz API
     await syncWithTelewiz(req.user.role, req.user.emailId, req.user.agentId);
 
-    const filter = {
-      $or: [
-        { agency_unq_id: { $exists: true, $ne: '' } },
-        { agency_id: { $exists: true, $ne: '' } },
-        { agentId: { $exists: true, $ne: '' } }
-      ]
-    };
-    let users = await User.find(filter).sort({ createdAt: -1 });  //find({ type: 'USER' }).sort({ createdAt: -1 });
-    //for future to get only their own users, we can add a field in user schema with agentid after auth is updated in Telewiz.
-
-    // If the requesting user is an agent, filter the users list to only show users assigned to them!
     const agentDoc = await Agent.findOne({ $or: [{ _id: req.user.emailId }, { emailId: req.user.emailId }] });
     const isAdmin = req.user && (req.user.role === 'admin' || (agentDoc && agentDoc.type === 'ADMIN') || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
+
+    let filter = {};
+    if (!isAdmin) {
+      filter = {
+        $or: [
+          { agency_unq_id: { $exists: true, $ne: '' } },
+          { agency_id: { $exists: true, $ne: '' } },
+          { agentId: { $exists: true, $ne: '' } }
+        ]
+      };
+    }
+
+    let users = await User.find(filter).sort({ createdAt: -1 });
     if (req.user && req.user.role === 'agent' && !isAdmin) {
       let agentIdNum = req.user.agentId || '';
       if (agentIdNum.includes('-')) {
