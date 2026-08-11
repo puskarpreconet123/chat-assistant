@@ -46,7 +46,11 @@ async function syncWithTelewiz(role, emailId, agentId) {
             } else {
               const existingUser = await User.findOne({ $or: [{ _id: u.email }, { emailId: u.email }] });
               let userAgencyId = u.agency_id || '';
-              let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
+              let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || '';
+              if (!userAgencyUnqId && userAgencyId) {
+                const agentDoc = await Agent.findOne({ id: Number(userAgencyId) });
+                userAgencyUnqId = agentDoc ? agentDoc._id : '';
+              }
 
               if (!u.agency_id && existingUser && (existingUser.agency_id || existingUser.agency_unq_id)) {
                 userAgencyId = existingUser.agency_id || '';
@@ -120,7 +124,11 @@ async function syncWithTelewiz(role, emailId, agentId) {
                 );
               } else {
                 const userAgencyId = u.agency_id || String(numericAgencyId);
-                const userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || `AGENCY-${userAgencyId}`;
+                let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || '';
+                if (!userAgencyUnqId && userAgencyId) {
+                  const agentDoc = await Agent.findOne({ id: Number(userAgencyId) });
+                  userAgencyUnqId = agentDoc ? agentDoc._id : '';
+                }
                 await User.findByIdAndUpdate(
                   u.email,
                   {

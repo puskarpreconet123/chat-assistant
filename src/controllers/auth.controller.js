@@ -127,7 +127,11 @@ export async function login(req, res) {
           // It's a player/user
           foundId = email;
           const userAgencyId = remoteUser.agency_id || '';
-          const userAgencyUnqId = remoteUser.agency_unq_id || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
+          let userAgencyUnqId = remoteUser.agency_unq_id;
+          if (!userAgencyUnqId && userAgencyId) {
+            const agentDoc = await Agent.findOne({ id: Number(userAgencyId) });
+            userAgencyUnqId = agentDoc ? agentDoc._id : '';
+          }
           agentId = userAgencyUnqId;
           name = displayName;
 
@@ -189,7 +193,11 @@ export async function login(req, res) {
                   } else {
                     const existingUser = await User.findOne({ $or: [{ _id: u.email }, { emailId: u.email }] });
                     let userAgencyId = u.agency_id || '';
-                    let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
+                    let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || '';
+                    if (!userAgencyUnqId && userAgencyId) {
+                      const agentDoc = await Agent.findOne({ id: Number(userAgencyId) });
+                      userAgencyUnqId = agentDoc ? agentDoc._id : '';
+                    }
 
                     if (!u.agency_id && existingUser && (existingUser.agency_id || existingUser.agency_unq_id)) {
                       userAgencyId = existingUser.agency_id || '';
@@ -307,7 +315,11 @@ export async function login(req, res) {
                     );
                   } else {
                     const userAgencyIdVal = u.agency_id || String(remoteUser.agency_id);
-                    const userAgencyUnqIdVal = u.agency_unq_id || agencyMap[String(userAgencyIdVal)] || `AGENCY-${userAgencyIdVal}`;
+                    let userAgencyUnqIdVal = u.agency_unq_id || agencyMap[String(userAgencyIdVal)] || '';
+                    if (!userAgencyUnqIdVal && userAgencyIdVal) {
+                      const agentDoc = await Agent.findOne({ id: Number(userAgencyIdVal) });
+                      userAgencyUnqIdVal = agentDoc ? agentDoc._id : '';
+                    }
                     await User.findByIdAndUpdate(
                       u.email,
                       {
