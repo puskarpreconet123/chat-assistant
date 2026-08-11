@@ -48,29 +48,12 @@ async function syncWithTelewiz(role, emailId, agentId) {
               let userAgencyId = u.agency_id || '';
               let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)];
 
-              if (!userAgencyUnqId) {
-                if (userAgencyId) {
-                  const matchedAgent = await Agent.findOne({ id: Number(userAgencyId) });
-                  if (matchedAgent) {
-                    userAgencyUnqId = matchedAgent._id;
-                  } else {
-                    userAgencyUnqId = `AGENCY-${userAgencyId}`;
-                  }
+              if (!userAgencyUnqId && userAgencyId) {
+                const matchedAgent = await Agent.findOne({ id: Number(userAgencyId) });
+                if (matchedAgent) {
+                  userAgencyUnqId = matchedAgent._id;
                 } else {
-                  let adminId = 'ADMIN-1';
-                  for (const val of Object.values(agencyMap)) {
-                    if (val && val.startsWith('ADMIN-')) {
-                      adminId = val;
-                      break;
-                    }
-                  }
-                  if (adminId === 'ADMIN-1') {
-                    const adminAgent = await Agent.findOne({ type: 'ADMIN' });
-                    if (adminAgent) {
-                      adminId = adminAgent._id;
-                    }
-                  }
-                  userAgencyUnqId = adminId;
+                  userAgencyUnqId = `AGENCY-${userAgencyId}`;
                 }
               }
 
@@ -148,29 +131,12 @@ async function syncWithTelewiz(role, emailId, agentId) {
                 const userAgencyId = u.agency_id || String(numericAgencyId);
                 let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)];
 
-                if (!userAgencyUnqId) {
-                  if (userAgencyId) {
-                    const matchedAgent = await Agent.findOne({ id: Number(userAgencyId) });
-                    if (matchedAgent) {
-                      userAgencyUnqId = matchedAgent._id;
-                    } else {
-                      userAgencyUnqId = `AGENCY-${userAgencyId}`;
-                    }
+                if (!userAgencyUnqId && userAgencyId) {
+                  const matchedAgent = await Agent.findOne({ id: Number(userAgencyId) });
+                  if (matchedAgent) {
+                    userAgencyUnqId = matchedAgent._id;
                   } else {
-                    let adminId = 'ADMIN-1';
-                    for (const val of Object.values(agencyMap)) {
-                      if (val && val.startsWith('ADMIN-')) {
-                        adminId = val;
-                        break;
-                      }
-                    }
-                    if (adminId === 'ADMIN-1') {
-                      const adminAgent = await Agent.findOne({ type: 'ADMIN' });
-                      if (adminAgent) {
-                        adminId = adminAgent._id;
-                      }
-                    }
-                    userAgencyUnqId = adminId;
+                    userAgencyUnqId = `AGENCY-${userAgencyId}`;
                   }
                 }
                 await User.findByIdAndUpdate(
