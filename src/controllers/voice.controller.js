@@ -13,7 +13,7 @@ export async function getVoiceUploadUrl(req, res) {
     // Verify conversation participant authorization
     const conversation = await Conversation.findById(conversationId);
     if (conversation) {
-      if (senderId !== conversation.agentId && senderId !== conversation.emailId) {
+      if (senderId !== conversation.participant1 && senderId !== conversation.participant2) {
         return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
       }
     } else if (conversationId.startsWith('conv-')) {
@@ -47,7 +47,7 @@ export async function getVoicePlayUrl(req, res) {
       const conversationId = parts[1];
       const conversation = await Conversation.findById(conversationId);
       if (conversation) {
-        if (req.user.emailId !== conversation.agentId && req.user.emailId !== conversation.emailId) {
+        if (req.user.emailId !== conversation.participant1 && req.user.emailId !== conversation.participant2) {
           return res.status(403).json({ error: 'Access denied: You are not a participant in this conversation' });
         }
       } else if (conversationId.startsWith('conv-')) {

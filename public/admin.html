@@ -321,14 +321,136 @@
     }
 
     /* Mobile styles overrides */
+    /* Clean, modern style for mobile drawer buttons */
+    .admin-mobile-btn {
+      width: calc(100% - 1.7rem);
+      margin: 0.35rem 0.85rem !important;
+      padding: 0.75rem 1rem !important;
+      background: none !important;
+      border: 1px solid transparent !important;
+      text-align: left;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary) !important;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      outline: none;
+      border-radius: 12px !important;
+      text-decoration: none !important;
+    }
+
+    .admin-mobile-btn span:last-child {
+      transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .admin-mobile-btn:hover span:last-child {
+      transform: translateX(4px);
+    }
+
+    .admin-mobile-btn:active {
+      transform: scale(0.97);
+    }
+
+    .admin-mobile-btn.active {
+      background: linear-gradient(135deg, rgba(0, 128, 105, 0.08) 0%, rgba(0, 128, 105, 0.03) 100%) !important;
+      border-color: rgba(0, 128, 105, 0.15) !important;
+      color: var(--primary) !important;
+      font-weight: 700 !important;
+      box-shadow: 0 2px 8px rgba(0, 128, 105, 0.05) !important;
+    }
+
+    .admin-mobile-btn.active .admin-btn-icon-badge {
+      background-color: var(--primary) !important;
+      color: #ffffff !important;
+      box-shadow: 0 3px 8px rgba(0, 128, 105, 0.2) !important;
+    }
+
+    /* Icon badge background */
+    .admin-btn-icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px !important;
+      background-color: rgba(0, 0, 0, 0.03) !important;
+      border: 1px solid rgba(0, 0, 0, 0.02) !important;
+      color: var(--text-secondary) !important;
+      font-size: 1rem;
+      transition: background-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+    }
+
+    .admin-mobile-btn:hover {
+      background-color: rgba(0, 0, 0, 0.02) !important;
+      border-color: rgba(0, 0, 0, 0.03) !important;
+    }
+
+    .admin-mobile-btn.active:hover {
+      background-color: rgba(0, 128, 105, 0.09) !important;
+    }
+
+    .admin-mobile-btn:hover .admin-btn-icon-badge {
+      background-color: rgba(0, 128, 105, 0.1) !important;
+      color: var(--primary) !important;
+      transform: translateY(-1px) scale(1.03) !important;
+    }
+
+    .admin-mobile-btn.logout-btn {
+      color: #dc2626 !important;
+      border: 1px solid rgba(239, 68, 68, 0.12) !important;
+      background: rgba(239, 68, 68, 0.05) !important;
+      margin-top: auto !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .admin-mobile-btn.logout-btn .admin-btn-icon-badge {
+      background-color: rgba(239, 68, 68, 0.08) !important;
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.05) !important;
+    }
+
+    .admin-mobile-btn.logout-btn:hover {
+      background-color: rgba(239, 68, 68, 0.09) !important;
+      border-color: rgba(239, 68, 68, 0.2) !important;
+    }
+
+    .admin-mobile-btn.logout-btn:hover .admin-btn-icon-badge {
+      background-color: #ef4444 !important;
+      color: #ffffff !important;
+      box-shadow: 0 3px 8px rgba(239, 68, 68, 0.2) !important;
+    }
+
+    /* Online pulse dot */
+    .online-indicator-dot {
+      position: absolute;
+      bottom: 0px;
+      right: 0px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--status-online, #25d366);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 6px var(--status-online, #25d366);
+      animation: pulse-dot 2s infinite;
+      z-index: 5;
+    }
+
+    @keyframes pulse-dot {
+      0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.6); }
+      70% { box-shadow: 0 0 0 5px rgba(37, 211, 102, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+    }
+
+    /* Mobile responsive overrides */
     .mobile-menu-btn {
       display: none;
       background: none;
       border: none;
       color: white;
-      font-size: 1.5rem;
       cursor: pointer;
-      padding: 0.5rem;
       outline: none;
       line-height: 1;
     }
@@ -337,12 +459,13 @@
     .admin-mobile-drawer-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
+      background: rgba(15, 23, 42, 0.35);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
       z-index: 999;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.35s ease;
     }
 
     .admin-mobile-drawer-overlay.active {
@@ -355,96 +478,54 @@
       top: 0;
       bottom: 0;
       right: 0;
-      width: 280px;
-      background: var(--bg-card);
+      width: 290px;
+      max-width: 80%;
+      background: rgba(255, 255, 255, 0.75) !important;
+      backdrop-filter: blur(30px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(30px) saturate(190%) !important;
       z-index: 1000;
-      box-shadow: -4px 0 15px rgba(0, 0, 0, 0.15);
+      box-shadow: -15px 0 40px rgba(15, 23, 42, 0.08) !important;
+      border-left: 1px solid rgba(255, 255, 255, 0.4) !important;
       display: flex;
       flex-direction: column;
-      padding: 1.5rem;
-      gap: 1.5rem;
+      padding: 0;
       transform: translateX(100%);
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .admin-mobile-drawer.active {
       transform: translateX(0);
     }
 
-    .admin-mobile-drawer-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .admin-mobile-drawer-title {
-      font-weight: 700;
-      color: var(--primary);
-      font-size: 1.1rem;
-    }
-
     .admin-mobile-drawer-close {
-      background: none;
-      border: none;
-      font-size: 1.3rem;
-      cursor: pointer;
-      color: var(--text-secondary);
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50% !important;
+      background: rgba(0, 0, 0, 0.04) !important;
+      border: none !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary) !important;
+      font-size: 0.95rem !important;
+      font-weight: 700 !important;
+      transition: all 0.2s ease !important;
+      opacity: 0.8;
+    }
+
+    .admin-mobile-drawer-close:hover {
+      background: rgba(239, 68, 68, 0.1) !important;
+      color: #ef4444 !important;
+      transform: rotate(90deg) scale(1.05) !important;
+      opacity: 1;
     }
 
     .admin-mobile-nav {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .admin-mobile-nav .tab-btn {
-      color: var(--text-primary) !important;
-      background: none;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
-      text-align: left;
-      width: 100%;
-      height: auto;
-      font-size: 0.95rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .admin-mobile-nav .tab-btn:hover, .admin-mobile-nav .tab-btn.active {
-      background: var(--primary-light);
-      color: var(--primary) !important;
-      border-color: var(--primary);
-    }
-
-    .admin-mobile-links {
-      margin-top: auto;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .admin-mobile-links .btn-header {
-      background: #f0f2f5 !important;
-      color: var(--text-primary) !important;
-      border: 1px solid var(--border-color) !important;
-      text-align: center;
-      padding: 0.75rem 1.1rem;
-      display: block;
-      border-radius: 8px;
-      font-size: 0.9rem;
-    }
-
-    .admin-mobile-links .btn-header:hover {
-      background: var(--primary-light) !important;
-      color: var(--primary) !important;
-      border-color: var(--primary) !important;
     }
 
     @media (max-width: 768px) {
@@ -452,12 +533,12 @@
         padding: 0 1rem;
       }
 
-      .tabs-nav, .header-links {
-        display: none;
+      .tabs-nav, .header-links, #profileContainer {
+        display: none !important;
       }
 
       .mobile-menu-btn {
-        display: block;
+        display: flex !important;
       }
 
       .main-container {
@@ -504,18 +585,6 @@
       .action-group {
         justify-content: flex-start;
         flex-wrap: wrap;
-      }
-
-      .profile-trigger {
-        padding: 0.35rem 0.6rem !important;
-      }
-      .profile-name-text {
-        font-size: 0.75rem !important;
-        max-width: 80px !important;
-      }
-      .profile-icon-img {
-        width: 20px !important;
-        height: 20px !important;
       }
     }
 
@@ -570,49 +639,7 @@
       transform: rotate(180deg);
     }
 
-    .profile-dropdown {
-      display: none;
-      position: absolute;
-      top: 110%;
-      right: 0;
-      background: #ffffff;
-      min-width: 140px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      border: 1px solid var(--border-color, #e9edef);
-      z-index: 100;
-      overflow: hidden;
-      animation: fadeIn 0.15s ease;
-    }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .profile-container.active .profile-dropdown {
-      display: block;
-    }
-
-    .profile-dropdown-btn {
-      width: 100%;
-      padding: 0.6rem 1rem;
-      background: none;
-      border: none;
-      text-align: left;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #ef4444;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: background 0.15s ease;
-    }
-
-    .profile-dropdown-btn:hover {
-      background: #fff5f5;
-    }
 
     @media (max-width: 640px) {
       .profile-modal-card {
@@ -652,28 +679,26 @@
         <button id="btnBackToAdminDashboard" style="display: none; background: #22c55e; border: none; color: white; padding: 0.45rem 1.1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-right: 0.5rem;" onmouseover="this.style.background='#16a34a'" onmouseout="this.style.background='#22c55e'">
           ↩️ Return to Admin
         </button>
-        <a href="/chat.html" class="btn-header" style="margin-right: 0.5rem;">💬 Chat Portal</a>
+
       </div>
 
       <!-- Profile Section -->
       <div class="profile-container" id="profileContainer">
         <div class="profile-trigger" id="profileTrigger">
-          <img id="profileIcon" src="view/images/avatar.avif" alt="Avatar" class="profile-icon-img" onerror="this.onerror=null; this.src='view/images/avatar.avif';" />
+          <div style="position: relative; display: flex; align-items: center;">
+            <img id="profileIcon" src="view/images/avatar.avif" alt="Avatar" class="profile-icon-img" onerror="this.onerror=null; this.src='view/images/avatar.avif';" />
+            <span class="online-indicator-dot" style="bottom: -2px; right: -2px; border: 1.5px solid #ffffff;"></span>
+          </div>
           <span id="profileName" class="profile-name-text">Loading...</span>
           <span class="profile-arrow">▼</span>
         </div>
-        <div class="profile-dropdown" id="profileDropdown" style="min-width: 140px;">
-          <button onclick="showProfileModal()" class="profile-dropdown-btn" style="color: var(--text-primary); border-bottom: 1px solid var(--border-color); border-radius: 0; display: flex; align-items: center; gap: 0.5rem; width: 100%; background: none; border: none; padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
-            <span>👤</span> Profile
-          </button>
-          <button onclick="adminLogout()" class="profile-dropdown-btn" style="display: flex; align-items: center; gap: 0.5rem; width: 100%; background: none; border: none; padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
-            <span>🚪</span> Sign Out
-          </button>
-        </div>
       </div>
 
-      <button class="mobile-menu-btn" onclick="toggleAdminMobileDrawer(true)">
-        <span>☰</span>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleAdminMobileDrawer(true)" style="position: relative; padding: 0; background: none; border: none; outline: none; cursor: pointer; align-items: center; justify-content: center; display: none;">
+        <div style="position: relative; display: flex; align-items: center;">
+          <img id="mobileHeaderIcon" src="view/images/avatar.avif" alt="Avatar" class="profile-icon-img" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.2);" onerror="this.onerror=null; this.src='view/images/avatar.avif';" />
+          <span class="online-indicator-dot"></span>
+        </div>
       </button>
     </div>
   </header>
@@ -681,28 +706,54 @@
   <!-- Admin Mobile Drawer -->
   <div id="adminMobileDrawerOverlay" class="admin-mobile-drawer-overlay" onclick="toggleAdminMobileDrawer(false)"></div>
   <div id="adminMobileDrawer" class="admin-mobile-drawer">
-    <div class="admin-mobile-drawer-header">
-      <span class="admin-mobile-drawer-title">⚙️ Admin Menu</span>
-      <button class="admin-mobile-drawer-close" onclick="toggleAdminMobileDrawer(false)">✕</button>
-    </div>
+    <div class="admin-mobile-drawer-header dropdown-mobile-only" style="display: none;"></div>
     
     <!-- Mobile User Info in Drawer -->
-    <div class="mobile-profile-info" style="display: flex; align-items: center; gap: 0.75rem; background: #f0f2f5; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 0.5rem;">
-      <img id="mobileProfileIcon" src="view/images/avatar.avif" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" onerror="this.onerror=null; this.src='view/images/avatar.avif';" />
-      <div style="display: flex; flex-direction: column;">
-        <span id="mobileProfileName" style="font-size: 0.9rem; font-weight: 600;">Loading...</span>
-        <span style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;" id="mobileProfileRole">Admin</span>
+    <div class="mobile-profile-info" style="padding: 2rem 1.25rem 1.5rem; background: linear-gradient(135deg, rgba(0, 128, 105, 0.04) 0%, rgba(1, 107, 87, 0.01) 100%); color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid rgba(0, 0, 0, 0.05); position: relative; margin-bottom: 0;">
+      <!-- Close button -->
+      <button class="admin-mobile-drawer-close" onclick="toggleAdminMobileDrawer(false)">✕</button>
+      
+      <div style="position: relative; display: flex; align-items: center; flex-shrink: 0;">
+        <img id="mobileProfileIcon" src="view/images/avatar.avif" alt="Avatar" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);" onerror="this.onerror=null; this.src='view/images/avatar.avif';" />
+        <span class="online-indicator-dot" style="width: 12px; height: 12px; border-width: 2px; right: 0; bottom: 0;"></span>
+      </div>
+      <div style="display: flex; flex-direction: column; min-width: 0; line-height: 1.3;">
+        <span id="mobileProfileName" style="font-weight: 700; font-size: 1.1rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Loading...</span>
+        <span id="mobileProfileRole" style="align-self: flex-start; margin-top: 0.2rem; background: rgba(0, 128, 105, 0.1); color: var(--primary); padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">Admin</span>
       </div>
     </div>
 
-    <div class="admin-mobile-nav">
-      <button id="mobTabBtnUsers" class="tab-btn active" onclick="switchAdminTab('users')">👤 Manage Users</button>
-      <button id="mobTabBtnAgents" class="tab-btn" onclick="switchAdminTab('agents')">👥 Manage Agents</button>
-      <button id="mobTabBtnRegister" class="tab-btn" onclick="switchAdminTab('register')">➕ Register New</button>
-    </div>
-    <div class="admin-mobile-links">
-      <a href="/chat.html" class="btn-header">💬 Chat Portal</a>
-      <button onclick="adminLogout()" class="btn-header" style="color: #ef4444; border-color: #fecaca; background: #fef2f2; text-align: center; width: 100%; border: 1px solid; border-radius: 8px; padding: 0.75rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; margin-top: 0.5rem;">🚪 Sign Out</button>
+    <div class="admin-mobile-nav" style="padding: 1rem 0; display: flex; flex-direction: column; flex: 1;">
+      <button onclick="showProfileModal()" class="admin-mobile-btn">
+        <span class="admin-btn-icon-badge">👤</span>
+        <span>Profile</span>
+      </button>
+      <button id="mobTabBtnUsers" class="admin-mobile-btn active" onclick="switchAdminTab('users')">
+        <span class="admin-btn-icon-badge">👤</span>
+        <span>Manage Users</span>
+      </button>
+      <button id="mobTabBtnAgents" class="admin-mobile-btn" onclick="switchAdminTab('agents')">
+        <span class="admin-btn-icon-badge">👥</span>
+        <span>Manage Agents</span>
+      </button>
+      <button id="mobTabBtnRegister" class="admin-mobile-btn" onclick="switchAdminTab('register')">
+        <span class="admin-btn-icon-badge">➕</span>
+        <span>Register New</span>
+      </button>
+      <button id="mobBtnBackToAdmin" onclick="document.getElementById('btnBackToAdminDashboard').click()" class="admin-mobile-btn" style="display: none;">
+        <span class="admin-btn-icon-badge">↩️</span>
+        <span>Return to Admin</span>
+      </button>
+
+      <a href="/chat.html" class="admin-mobile-btn">
+        <span class="admin-btn-icon-badge">💬</span>
+        <span>Chat Portal</span>
+      </a>
+
+      <button onclick="adminLogout()" class="admin-mobile-btn logout-btn">
+        <span class="admin-btn-icon-badge">🚪</span>
+        <span>Sign Out</span>
+      </button>
     </div>
   </div>
 
@@ -986,6 +1037,7 @@
         const mobileProfileNameEl = document.getElementById('mobileProfileName');
         const mobileProfileIconEl = document.getElementById('mobileProfileIcon');
         const mobileProfileRoleEl = document.getElementById('mobileProfileRole');
+        const mobileHeaderIcon = document.getElementById('mobileHeaderIcon');
 
         const userDisplayName = currentUser.name || currentUser.emailId || currentUser._id;
         const userAvatar = currentUser.avatar || 'view/images/avatar.avif';
@@ -996,21 +1048,15 @@
         if (mobileProfileNameEl) mobileProfileNameEl.textContent = userDisplayName;
         if (mobileProfileIconEl) mobileProfileIconEl.src = userAvatar;
         if (mobileProfileRoleEl) mobileProfileRoleEl.textContent = userRole;
+        if (mobileHeaderIcon) mobileHeaderIcon.src = userAvatar;
       }
 
       // Setup profile dropdown toggle click handlers
-      const profileContainer = document.getElementById('profileContainer');
       const profileTrigger = document.getElementById('profileTrigger');
-      if (profileTrigger && profileContainer) {
+      if (profileTrigger) {
         profileTrigger.addEventListener('click', (e) => {
           e.stopPropagation();
-          profileContainer.classList.toggle('active');
-        });
-
-        document.addEventListener('click', (e) => {
-          if (!profileContainer.contains(e.target)) {
-            profileContainer.classList.remove('active');
-          }
+          toggleAdminMobileDrawer(true);
         });
       }
 
@@ -1018,8 +1064,10 @@
       const hasAgentIdentity = !!localStorage.getItem('agent_identity');
       if (hasAgentIdentity) {
         const btnBackToAdmin = document.getElementById('btnBackToAdminDashboard');
+        const mobBtnBackToAdmin = document.getElementById('mobBtnBackToAdmin');
         if (btnBackToAdmin) {
           btnBackToAdmin.style.display = 'inline-block';
+          if (mobBtnBackToAdmin) mobBtnBackToAdmin.style.display = 'flex';
           btnBackToAdmin.addEventListener('click', (e) => {
             e.preventDefault();
             const agentIdentity = localStorage.getItem('agent_identity');
@@ -1231,7 +1279,6 @@
               <td>
                 <div class="action-group">
                   <button class="btn-action" onclick="openChat('${user._id}', 'user', '${user.name}', false)">Connect Here 👤</button>
-                  <button class="btn-action" style="background:#fff;" onclick="openChat('${user._id}', 'user', '${user.name}', true)">New Tab ↗</button>
                   ${deleteBtn}
                 </div>
               </td>

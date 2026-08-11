@@ -17,7 +17,7 @@ export async function getMessages(req, res) {
       if (!conv) {
         return res.status(404).json({ error: 'Conversation not found' });
       }
-      if (conv.agentId !== req.user.emailId && conv.emailId !== req.user.emailId) {
+      if (conv.participant1 !== req.user.emailId && conv.participant2 !== req.user.emailId) {
         return res.status(403).json({ error: 'Access denied: You are not a participant of this conversation' });
       }
     }

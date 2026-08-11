@@ -516,9 +516,11 @@
       animation: spin 0.8s linear infinite;
     }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    .widget-btn-text {
+      display: inline;
+    }
+    .widget-btn-icon-only {
+      display: none;
     }
 
     @media (max-width: 480px) {
@@ -545,6 +547,19 @@
         height: 30px !important;
         font-size: 0.8rem !important;
         flex-shrink: 0 !important;
+      }
+      .widget-btn-text {
+        display: none !important;
+      }
+      .widget-btn-icon-only {
+        display: inline-block !important;
+      }
+      .action-tab-btn {
+        padding: 0.35rem 0.5rem !important;
+        gap: 0 !important;
+      }
+      #btnWidgetBack {
+        padding: 0.25rem 0.4rem !important;
       }
     }
   `;
@@ -574,7 +589,7 @@
         </div>
       </div>
       <div class="widget-header-actions" style="display: flex; gap: 0.35rem; align-items: center; flex-shrink: 0;">
-        <button id="btnWidgetBack" class="btn-header-action" style="display:none;" onclick="goBackToConvoList()">← Back</button>
+        <button id="btnWidgetBack" class="btn-header-action" style="display:none;" onclick="goBackToConvoList()">← <span class="widget-btn-text">Back</span></button>
         <button class="btn-header-action" style="font-size:0.95rem; font-weight:700; padding:0 0.25rem;" onclick="toggleChatDrawer(false)">×</button>
       </div>
     </div>
@@ -593,8 +608,8 @@
         <div id="widgetActiveChat" class="active-chat-widget" style="display: none; position: relative;">
           <!-- Quick Action Buttons -->
           <div class="quick-actions-bar" style="display: flex; gap: 0.4rem; padding: 0.35rem 0.65rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;">
-            <button class="action-tab-btn" onclick="openQuickForm('deposit')">💸 Recharge</button>
-            <button class="action-tab-btn" onclick="openQuickForm('issue')">⚠️ Withdraw</button>
+            <button class="action-tab-btn" onclick="openQuickForm('deposit')">💸 <span class="widget-btn-text">Recharge</span></button>
+            <button class="action-tab-btn" onclick="openQuickForm('issue')">⚠️ <span class="widget-btn-text">Withdraw</span></button>
           </div>
 
           <div id="widgetMessages" class="messages-widget">
@@ -616,7 +631,7 @@
 
           <div class="input-bar-widget">
             <input type="text" id="widgetMsgInput" placeholder="Type a message..." />
-            <button class="btn-widget" onclick="sendWidgetText()">Send</button>
+            <button class="btn-widget" onclick="sendWidgetText()"><span class="widget-btn-icon-only">➤</span><span class="widget-btn-text">Send</span></button>
             <button class="btn-widget-icon" onclick="sendWidgetVoice()" title="Send Voice Simulation" style="display: inline-flex; align-items: center; justify-content: center;"><img src="/view/images/mic.svg?v=2" style="width: 20px; height: 20px;" /></button>
             <button class="btn-widget-icon" onclick="sendWidgetImage()" title="Send Image" style="display: inline-flex; align-items: center; justify-content: center;"><img src="/view/images/image.svg?v=2" style="width: 20px; height: 20px;" /></button>
             <input type="file" id="widgetImageFileInput" accept="image/*" style="display:none" onchange="uploadWidgetImage(this.files[0])" />

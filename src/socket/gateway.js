@@ -147,18 +147,15 @@ export function setupSocketGateway(httpServer) {
         const messageId = data._id || uuidv4();
         const createdAt = new Date();
 
-        // Determine agentId & emailId for Conversation mapping
-        let currentAgentId = (role === 'agent' || role === 'admin') ? emailId : agentId || recipientId;
-        let currentEmailId = role === 'user' ? emailId : recipientId;
+        const sorted = [emailId, recipientId].sort();
+        const currentParticipant1 = sorted[0];
+        const currentParticipant2 = sorted[1];
 
-        // Try to fetch existing conversation to lock roles
+        // Try to fetch existing conversation to lock participants
         const existingConv = await Conversation.findById(conversationId);
         if (existingConv) {
-          currentAgentId = existingConv.agentId;
-          currentEmailId = existingConv.emailId;
-
           // Enforce active participant authorization check
-          if (emailId !== existingConv.agentId && emailId !== existingConv.emailId) {
+          if (emailId !== existingConv.participant1 && emailId !== existingConv.participant2) {
             const errPayload = { error: 'Unauthorized: You are not a participant in this conversation.' };
             if (typeof ackCallback === 'function') ackCallback(errPayload);
             return socket.emit('error', errPayload);
@@ -222,8 +219,8 @@ export function setupSocketGateway(httpServer) {
           recharge: type === 'recharge' ? recharge : undefined,
           status: 'sent',
           createdAt,
-          agentId: currentAgentId,
-          emailId: currentEmailId,
+          participant1: currentParticipant1,
+          participant2: currentParticipant2,
           recipientId,
           recipientType
         };
@@ -298,9 +295,9 @@ export function setupSocketGateway(httpServer) {
 
         // 2. Reset unread counter for current user in Conversation
         const conv = await Conversation.findById(conversationId);
-        let unreadField = 'unread.user';
-        if (conv && conv.agentId === emailId) {
-          unreadField = 'unread.agent';
+        let unreadField = 'unread2';
+        if (conv && conv.participant1 === emailId) {
+          unreadField = 'unread1';
         }
         await Conversation.updateOne({ _id: conversationId }, { $set: { [unreadField]: 0 } });
 

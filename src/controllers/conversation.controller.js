@@ -4,21 +4,14 @@ import { Agent } from '../models/Agent.js';
 
 export async function listConversations(req, res) {
   try {
-    const isAgentUser = req.user.role === 'agent' || req.user.role === 'admin';
+    const currentUserId = req.user.emailId;
 
-    let filter = {};
-    if (isAgentUser) {
-      // Both Admin and Agents see conversations where they are either the agentId OR the emailId
-      filter = {
-        $or: [
-          { agentId: req.user.emailId },
-          { emailId: req.user.emailId }
-        ]
-      };
-    } else {
-      // Normal players only see their own conversations
-      filter = { emailId: req.user.emailId };
-    }
+    const filter = {
+      $or: [
+        { participant1: currentUserId },
+        { participant2: currentUserId }
+      ]
+    };
 
     const limit = parseInt(req.query.limit || '20', 10);
     // Fetch conversations from MongoDB
@@ -26,16 +19,13 @@ export async function listConversations(req, res) {
       .sort({ lastMessageAt: -1 })
       .limit(limit);
 
-    // Convert mongoose documents to plain objects to mutate emailId and agentId
+    // Convert mongoose documents to plain objects to mutate
     const conversationsJson = conversations.map(c => c.toObject());
 
-    const emailIds = [...new Set(conversationsJson.map(c => c.emailId))].filter(Boolean);
-    const agentIds = [...new Set(conversationsJson.map(c => c.agentId))].filter(Boolean);
+    const allParticipantIds = [...new Set(conversationsJson.flatMap(c => [c.participant1, c.participant2]))].filter(Boolean);
 
     const userMap = new Map();
     const agentMap = new Map();
-
-    const allParticipantIds = [...new Set([...emailIds, ...agentIds])].filter(Boolean);
 
     if (allParticipantIds.length > 0) {
       const [users, agents] = await Promise.all([
@@ -73,13 +63,21 @@ export async function listConversations(req, res) {
       }
     }
 
-    // Populate user and agent details in the conversations list
+    // Populate user and agent details and construct legacy fields for backward-compatibility
     for (const c of conversationsJson) {
-      const mappedEmailUser = userMap.get(c.emailId) || agentMap.get(c.emailId);
-      c.emailId = mappedEmailUser || { emailId: c.emailId, name: 'Unknown Participant' };
+      const p1Details = userMap.get(c.participant1) || agentMap.get(c.participant1) || { emailId: c.participant1, name: 'Unknown Participant' };
+      const p2Details = userMap.get(c.participant2) || agentMap.get(c.participant2) || { emailId: c.participant2, name: 'Unknown Participant' };
 
-      const mappedAgentUser = agentMap.get(c.agentId) || userMap.get(c.agentId);
-      c.agentId = mappedAgentUser || { emailId: c.agentId, name: 'Unknown Participant' };
+      c.participant1Details = p1Details;
+      c.participant2Details = p2Details;
+
+      const isP1CurrentUser = c.participant1 === currentUserId;
+      c.agentId = isP1CurrentUser ? p1Details : p2Details;
+      c.emailId = isP1CurrentUser ? p2Details : p1Details;
+      c.unread = {
+        agent: isP1CurrentUser ? (c.unread1 || 0) : (c.unread2 || 0),
+        user: isP1CurrentUser ? (c.unread2 || 0) : (c.unread1 || 0)
+      };
     }
 
     return res.json({

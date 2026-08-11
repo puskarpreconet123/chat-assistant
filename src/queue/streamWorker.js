@@ -42,8 +42,8 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       image,
       recharge,
       createdAt = new Date(),
-      agentId,
-      emailId,
+      participant1,
+      participant2,
       recipientId,
       recipientType
     } = data;
@@ -65,16 +65,15 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       createdAt: new Date(createdAt)
     });
 
-    const isRecipientAgent = recipientId === agentId;
-    const incField = isRecipientAgent ? 'unread.agent' : 'unread.user';
+    const incField = recipientId === participant1 ? 'unread1' : 'unread2';
 
     // 2. Upsert Conversation & update unread count + lastMessageAt
     await Conversation.findByIdAndUpdate(
       conversationId,
       {
         $set: {
-          agentId,
-          emailId,
+          participant1,
+          participant2,
           lastMessageAt: new Date(createdAt)
         },
         $inc: {
@@ -123,10 +122,13 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
     // 3. Emit message:new event to recipient's room
     emitter.to(`user:${recipientId}`).emit('message:new', messageObj);
 
-    // If the conversation's agentId is different from recipientId and senderId (e.g. admin sent it),
-    // also notify the assigned agent.
-    if (agentId && agentId !== recipientId && agentId !== senderId) {
-      emitter.to(`user:${agentId}`).emit('message:new', messageObj);
+    // If there is a participant in the conversation who is neither the sender nor the recipient (e.g. admin sent it),
+    // also notify that participant.
+    if (participant1 && participant1 !== recipientId && participant1 !== senderId) {
+      emitter.to(`user:${participant1}`).emit('message:new', messageObj);
+    }
+    if (participant2 && participant2 !== recipientId && participant2 !== senderId) {
+      emitter.to(`user:${participant2}`).emit('message:new', messageObj);
     }
 
     // Also notify any connected admins in real-time
