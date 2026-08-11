@@ -189,9 +189,17 @@ export async function login(req, res) {
                   } else {
                     const existingUser = await User.findOne({ $or: [{ _id: u.email }, { emailId: u.email }] });
                     let userAgencyId = u.agency_id || '';
-                    let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
+                    let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)];
 
-                    if (!userAgencyId && existingUser && (existingUser.agency_id || existingUser.agency_unq_id)) {
+                    if (!userAgencyUnqId) {
+                      if (userAgencyId && userAgencyId !== '1' && userAgencyId !== 1) {
+                        userAgencyUnqId = `AGENCY-${userAgencyId}`;
+                      } else {
+                        userAgencyUnqId = 'ADMIN-1';
+                      }
+                    }
+
+                    if (!u.agency_id && existingUser && (existingUser.agency_id || existingUser.agency_unq_id)) {
                       userAgencyId = existingUser.agency_id || '';
                       userAgencyUnqId = existingUser.agency_unq_id || '';
                     }
@@ -307,7 +315,15 @@ export async function login(req, res) {
                     );
                   } else {
                     const userAgencyIdVal = u.agency_id || String(remoteUser.agency_id);
-                    const userAgencyUnqIdVal = u.agency_unq_id || agencyMap[String(userAgencyIdVal)] || `AGENCY-${userAgencyIdVal}`;
+                    let userAgencyUnqIdVal = u.agency_unq_id || agencyMap[String(userAgencyIdVal)];
+
+                    if (!userAgencyUnqIdVal) {
+                      if (userAgencyIdVal && userAgencyIdVal !== '1' && userAgencyIdVal !== 1) {
+                        userAgencyUnqIdVal = `AGENCY-${userAgencyIdVal}`;
+                      } else {
+                        userAgencyUnqIdVal = 'ADMIN-1';
+                      }
+                    }
                     await User.findByIdAndUpdate(
                       u.email,
                       {
