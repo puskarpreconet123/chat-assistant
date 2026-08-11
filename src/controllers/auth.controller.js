@@ -189,16 +189,7 @@ export async function login(req, res) {
                   } else {
                     const existingUser = await User.findOne({ $or: [{ _id: u.email }, { emailId: u.email }] });
                     let userAgencyId = u.agency_id || '';
-                    let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)];
-
-                    if (!userAgencyUnqId && userAgencyId) {
-                      const matchedAgent = await Agent.findOne({ id: Number(userAgencyId) });
-                      if (matchedAgent) {
-                        userAgencyUnqId = matchedAgent._id;
-                      } else {
-                        userAgencyUnqId = `AGENCY-${userAgencyId}`;
-                      }
-                    }
+                    let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
 
                     if (!u.agency_id && existingUser && (existingUser.agency_id || existingUser.agency_unq_id)) {
                       userAgencyId = existingUser.agency_id || '';
@@ -316,16 +307,7 @@ export async function login(req, res) {
                     );
                   } else {
                     const userAgencyIdVal = u.agency_id || String(remoteUser.agency_id);
-                    let userAgencyUnqIdVal = u.agency_unq_id || agencyMap[String(userAgencyIdVal)];
-
-                    if (!userAgencyUnqIdVal && userAgencyIdVal) {
-                      const matchedAgent = await Agent.findOne({ id: Number(userAgencyIdVal) });
-                      if (matchedAgent) {
-                        userAgencyUnqIdVal = matchedAgent._id;
-                      } else {
-                        userAgencyUnqIdVal = `AGENCY-${userAgencyIdVal}`;
-                      }
-                    }
+                    const userAgencyUnqIdVal = u.agency_unq_id || agencyMap[String(userAgencyIdVal)] || `AGENCY-${userAgencyIdVal}`;
                     await User.findByIdAndUpdate(
                       u.email,
                       {

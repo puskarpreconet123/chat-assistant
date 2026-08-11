@@ -46,16 +46,7 @@ async function syncWithTelewiz(role, emailId, agentId) {
             } else {
               const existingUser = await User.findOne({ $or: [{ _id: u.email }, { emailId: u.email }] });
               let userAgencyId = u.agency_id || '';
-              let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)];
-
-              if (!userAgencyUnqId && userAgencyId) {
-                const matchedAgent = await Agent.findOne({ id: Number(userAgencyId) });
-                if (matchedAgent) {
-                  userAgencyUnqId = matchedAgent._id;
-                } else {
-                  userAgencyUnqId = `AGENCY-${userAgencyId}`;
-                }
-              }
+              let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || (userAgencyId ? `AGENCY-${userAgencyId}` : '');
 
               if (!u.agency_id && existingUser && (existingUser.agency_id || existingUser.agency_unq_id)) {
                 userAgencyId = existingUser.agency_id || '';
@@ -129,16 +120,7 @@ async function syncWithTelewiz(role, emailId, agentId) {
                 );
               } else {
                 const userAgencyId = u.agency_id || String(numericAgencyId);
-                let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)];
-
-                if (!userAgencyUnqId && userAgencyId) {
-                  const matchedAgent = await Agent.findOne({ id: Number(userAgencyId) });
-                  if (matchedAgent) {
-                    userAgencyUnqId = matchedAgent._id;
-                  } else {
-                    userAgencyUnqId = `AGENCY-${userAgencyId}`;
-                  }
-                }
+                const userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || `AGENCY-${userAgencyId}`;
                 await User.findByIdAndUpdate(
                   u.email,
                   {
