@@ -1369,11 +1369,15 @@
       let finalFileKey = presignedData.fileKey;
 
       try {
+        const uploadHeaders = {
+          'Content-Type': 'audio/webm'
+        };
+        if (presignedData.uploadUrl.startsWith('/') || presignedData.uploadUrl.includes(window.location.host)) {
+          uploadHeaders['Authorization'] = `Bearer ${currentToken}`;
+        }
         uploadRes = await fetch(presignedData.uploadUrl, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'audio/webm'
-          },
+          headers: uploadHeaders,
           body: audioBlob
         });
         if (!uploadRes.ok) throw new Error('S3 Upload failed');
@@ -1385,7 +1389,8 @@
         uploadRes = await fetch(mockUploadUrl, {
           method: 'PUT',
           headers: {
-            'Content-Type': 'audio/webm'
+            'Content-Type': 'audio/webm',
+            'Authorization': `Bearer ${currentToken}`
           },
           body: audioBlob
         });
@@ -1468,11 +1473,15 @@
       let finalFileKey = presignedData.fileKey;
 
       try {
+        const uploadHeaders = {
+          'Content-Type': file.type || 'image/jpeg'
+        };
+        if (presignedData.uploadUrl.startsWith('/') || presignedData.uploadUrl.includes(window.location.host)) {
+          uploadHeaders['Authorization'] = `Bearer ${currentToken}`;
+        }
         uploadRes = await fetch(presignedData.uploadUrl, {
           method: 'PUT',
-          headers: {
-            'Content-Type': file.type || 'image/jpeg'
-          },
+          headers: uploadHeaders,
           body: file
         });
         if (!uploadRes.ok) throw new Error('S3 Upload failed');
@@ -1485,7 +1494,8 @@
         uploadRes = await fetch(mockUploadUrl, {
           method: 'PUT',
           headers: {
-            'Content-Type': file.type || 'image/jpeg'
+            'Content-Type': file.type || 'image/jpeg',
+            'Authorization': `Bearer ${currentToken}`
           },
           body: file
         });
@@ -1796,11 +1806,15 @@
 
     try {
       // 2. Upload file
+      const uploadHeaders = {
+        'Content-Type': file.type || 'image/jpeg'
+      };
+      if (presignedData.uploadUrl.startsWith('/') || presignedData.uploadUrl.includes(window.location.host)) {
+        uploadHeaders['Authorization'] = `Bearer ${currentToken}`;
+      }
       uploadRes = await fetch(presignedData.uploadUrl, {
         method: 'PUT',
-        headers: {
-          'Content-Type': file.type || 'image/jpeg'
-        },
+        headers: uploadHeaders,
         body: file
       });
       if (!uploadRes.ok) throw new Error('S3 Upload failed');
@@ -1813,7 +1827,8 @@
       uploadRes = await fetch(mockUploadUrl, {
         method: 'PUT',
         headers: {
-          'Content-Type': file.type || 'image/jpeg'
+          'Content-Type': file.type || 'image/jpeg',
+          'Authorization': `Bearer ${currentToken}`
         },
         body: file
       });
