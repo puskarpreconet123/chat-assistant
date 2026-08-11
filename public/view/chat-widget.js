@@ -1222,9 +1222,10 @@
     const text = input.value.trim();
     if (!text || !socket || !socket.connected) return;
 
-    const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
+    const isStaff = currentUser.role === 'agent' || currentUser.role === 'admin';
+    const partner = isStaff ? activeConversation.emailId : activeConversation.agentId;
     const recipientId = partner?._id || partner;
-    const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
+    const agentId = isStaff ? currentUser._id : recipientId;
     const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
     const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${emailId}`;
     const messageId = 'msg-' + Date.now();
@@ -1340,9 +1341,10 @@
   }
 
   async function uploadWidgetAudioBlob(audioBlob, duration) {
-    const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
+    const isStaff = currentUser.role === 'agent' || currentUser.role === 'admin';
+    const partner = isStaff ? activeConversation.emailId : activeConversation.agentId;
     const recipientId = partner?._id || partner;
-    const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
+    const agentId = isStaff ? currentUser._id : recipientId;
     const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
     const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${emailId}`;
     const messageId = 'msg-voice-' + Date.now();
@@ -1444,9 +1446,10 @@
   async function uploadWidgetImage(file) {
     if (!file) return;
 
-    const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
+    const isStaff = currentUser.role === 'agent' || currentUser.role === 'admin';
+    const partner = isStaff ? activeConversation.emailId : activeConversation.agentId;
     const recipientId = partner?._id || partner;
-    const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
+    const agentId = isStaff ? currentUser._id : recipientId;
     const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
     const conversationId = activeConversation ? activeConversation._id : `conv-${agentId}-${emailId}`;
     const messageId = 'msg-image-' + Date.now();
@@ -1780,9 +1783,10 @@
 
   async function submitRechargeRequest(game, amount, txId, file) {
     const conv = await ensureWidgetConnectedAndGetConversation();
-    const partner = currentUser.role === 'agent' ? conv.emailId : conv.agentId;
+    const isStaff = currentUser.role === 'agent' || currentUser.role === 'admin';
+    const partner = isStaff ? conv.emailId : conv.agentId;
     const recipientId = partner?._id || partner;
-    const agentId = currentUser.role === 'agent' ? currentUser._id : recipientId;
+    const agentId = isStaff ? currentUser._id : recipientId;
     const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
     const conversationId = conv._id;
     const messageId = 'msg-recharge-' + Date.now();
