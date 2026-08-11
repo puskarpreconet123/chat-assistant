@@ -193,15 +193,27 @@ export async function login(req, res) {
 
                     if (!userAgencyUnqId) {
                       if (userAgencyId) {
-                        const matchedAgent = await Agent.findOne({ $or: [{ id: Number(userAgencyId) }, { id: String(userAgencyId) }] });
-                        if (matchedAgent && matchedAgent.type === 'ADMIN') {
-                          userAgencyUnqId = matchedAgent._id || `ADMIN-${userAgencyId}`;
+                        const matchedAgent = await Agent.findOne({ id: Number(userAgencyId) });
+                        if (matchedAgent) {
+                          userAgencyUnqId = matchedAgent._id;
                         } else {
                           userAgencyUnqId = `AGENCY-${userAgencyId}`;
                         }
                       } else {
-                        const adminAgent = await Agent.findOne({ type: 'ADMIN' });
-                        userAgencyUnqId = adminAgent ? adminAgent._id : 'ADMIN-1';
+                        let adminId = 'ADMIN-1';
+                        for (const val of Object.values(agencyMap)) {
+                          if (val && val.startsWith('ADMIN-')) {
+                            adminId = val;
+                            break;
+                          }
+                        }
+                        if (adminId === 'ADMIN-1') {
+                          const adminAgent = await Agent.findOne({ type: 'ADMIN' });
+                          if (adminAgent) {
+                            adminId = adminAgent._id;
+                          }
+                        }
+                        userAgencyUnqId = adminId;
                       }
                     }
 
@@ -325,15 +337,27 @@ export async function login(req, res) {
 
                     if (!userAgencyUnqIdVal) {
                       if (userAgencyIdVal) {
-                        const matchedAgent = await Agent.findOne({ $or: [{ id: Number(userAgencyIdVal) }, { id: String(userAgencyIdVal) }] });
-                        if (matchedAgent && matchedAgent.type === 'ADMIN') {
-                          userAgencyUnqIdVal = matchedAgent._id || `ADMIN-${userAgencyIdVal}`;
+                        const matchedAgent = await Agent.findOne({ id: Number(userAgencyIdVal) });
+                        if (matchedAgent) {
+                          userAgencyUnqIdVal = matchedAgent._id;
                         } else {
                           userAgencyUnqIdVal = `AGENCY-${userAgencyIdVal}`;
                         }
                       } else {
-                        const adminAgent = await Agent.findOne({ type: 'ADMIN' });
-                        userAgencyUnqIdVal = adminAgent ? adminAgent._id : 'ADMIN-1';
+                        let adminId = 'ADMIN-1';
+                        for (const val of Object.values(agencyMap)) {
+                          if (val && val.startsWith('ADMIN-')) {
+                            adminId = val;
+                            break;
+                          }
+                        }
+                        if (adminId === 'ADMIN-1') {
+                          const adminAgent = await Agent.findOne({ type: 'ADMIN' });
+                          if (adminAgent) {
+                            adminId = adminAgent._id;
+                          }
+                        }
+                        userAgencyUnqIdVal = adminId;
                       }
                     }
                     await User.findByIdAndUpdate(
