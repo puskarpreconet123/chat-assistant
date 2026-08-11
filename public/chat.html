@@ -1513,7 +1513,7 @@
       allUsersList.innerHTML = '';
 
       let renderedCount = 0;
-      const isAdmin = currentUser.role === 'agent' && String(currentUser._id || currentUser.emailId).toUpperCase().includes('ADMIN');
+      const isAdmin = currentUser.role === 'admin' || (currentUser.role === 'agent' && String(currentUser._id || currentUser.emailId).toUpperCase().includes('ADMIN'));
 
       // 1. Render Agents
       if (allAgents.length > 0) {

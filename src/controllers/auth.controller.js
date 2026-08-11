@@ -36,7 +36,7 @@ export async function login(req, res) {
 
       const agent = await Agent.findOne({ $or: [{ _id: emailId }, { emailId }] });
       if (agent) {
-        role = 'agent';
+        role = agent.type === 'ADMIN' ? 'admin' : 'agent';
         agentId = agent._id;
         foundId = agent._id;
         if (!name) name = agent.name;
@@ -90,7 +90,9 @@ export async function login(req, res) {
       if (remoteSuccess && remoteData && remoteData.user) {
         const remoteUser = remoteData.user;
         const remoteRole = String(remoteUser.role || '').toUpperCase();
-        if (remoteRole === 'AGENCY' || remoteRole === 'ADMIN') {
+        if (remoteRole === 'ADMIN') {
+          role = 'admin';
+        } else if (remoteRole === 'AGENCY') {
           role = 'agent';
         } else {
           role = 'user';
@@ -102,7 +104,7 @@ export async function login(req, res) {
         const mob = remoteUser.mob || remoteUser.mobile || remoteUser.phone || '';
         const displayName = remoteUser.name || name || email;
 
-        if (role === 'agent') {
+        if (role === 'agent' || role === 'admin') {
           const agencyUnqId = remoteUser.agency_unq_id || (remoteRole === 'ADMIN' && remoteUser.id ? `ADMIN-${remoteUser.id}` : (remoteRole === 'AGENCY' && remoteUser.id ? `AGENCY-${remoteUser.id}` : remoteUser.id || email));
           foundId = agencyUnqId;
           agentId = agencyUnqId;

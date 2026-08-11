@@ -229,7 +229,8 @@ export async function createUser(req, res) {
 
 export async function listAgents(req, res) {
   try {
-    const isAdmin = req.user && (req.user.role === 'admin' || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
+    const agentDoc = await Agent.findOne({ $or: [{ _id: req.user.emailId }, { emailId: req.user.emailId }] });
+    const isAdmin = req.user && (req.user.role === 'admin' || (agentDoc && agentDoc.type === 'ADMIN') || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
     
     // Sync latest users and agents from Telewiz API
     await syncWithTelewiz(req.user.role, req.user.emailId, req.user.agentId);
@@ -269,7 +270,8 @@ export async function listUsers(req, res) {
     //for future to get only their own users, we can add a field in user schema with agentid after auth is updated in Telewiz.
 
     // If the requesting user is an agent, filter the users list to only show users assigned to them!
-    const isAdmin = req.user && (req.user.role === 'admin' || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
+    const agentDoc = await Agent.findOne({ $or: [{ _id: req.user.emailId }, { emailId: req.user.emailId }] });
+    const isAdmin = req.user && (req.user.role === 'admin' || (agentDoc && agentDoc.type === 'ADMIN') || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
     if (req.user && req.user.role === 'agent' && !isAdmin) {
       let agentIdNum = req.user.agentId || '';
       if (agentIdNum.includes('-')) {
@@ -298,7 +300,8 @@ export async function listUsers(req, res) {
 
 export async function assignUsers(req, res) {
   try {
-    const isAdmin = req.user && (req.user.role === 'admin' || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
+    const agentDoc = await Agent.findOne({ $or: [{ _id: req.user.emailId }, { emailId: req.user.emailId }] });
+    const isAdmin = req.user && (req.user.role === 'admin' || (agentDoc && agentDoc.type === 'ADMIN') || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
     if (!isAdmin) {
       return res.status(403).json({ error: 'Access denied: Agents cannot assign users.' });
     }
@@ -341,7 +344,8 @@ export async function assignUsers(req, res) {
 
 export async function deleteUsers(req, res) {
   try {
-    const isAdmin = req.user && (req.user.role === 'admin' || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
+    const agentDoc = await Agent.findOne({ $or: [{ _id: req.user.emailId }, { emailId: req.user.emailId }] });
+    const isAdmin = req.user && (req.user.role === 'admin' || (agentDoc && agentDoc.type === 'ADMIN') || String(req.user.emailId || '').toUpperCase().includes('ADMIN') || String(req.user.agentId || '').toUpperCase().includes('ADMIN'));
     if (!isAdmin) {
       return res.status(403).json({ error: 'Access denied: Agents cannot delete users.' });
     }
