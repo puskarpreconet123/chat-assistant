@@ -146,3 +146,44 @@ export async function submitRecharge(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+export async function submitWithdraw(req, res) {
+  try {
+    const { userId, bookId, amount, detail, image } = req.body;
+
+    if (!userId || !bookId || !amount || !detail || !image) {
+      return res.status(400).json({ error: 'userId, bookId, amount, detail, and image are required' });
+    }
+
+    // Lookup user to resolve their numeric user ID (id)
+    const user = await User.findById(userId);
+    const resolvedUserId = (user && user.id) ? user.id : userId;
+
+    const payload = {
+      action: 'user_withdraw',
+      user_id: resolvedUserId,
+      book_id: Number(bookId),
+      amount: Number(amount),
+      deatil: detail,
+      image: image // Base64 string
+    };
+
+    console.log(`[RechargeController] Submitting withdraw to PHP API at ${config.phpApiUrl}:`, {
+      ...payload,
+      image: payload.image ? `${payload.image.substring(0, 30)}...` : null
+    });
+
+    const response = await fetch(config.phpApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    return res.json(result);
+  } catch (err) {
+    console.error('[RechargeController] Error in submitWithdraw:', err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+

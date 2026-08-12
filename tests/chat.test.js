@@ -571,6 +571,40 @@ async function runTests() {
               message: "Recharge request submitted successfully to PHP"
             })
           };
+        } else if (body.action === 'user_withdraw') {
+          assert.strictEqual(body.action, 'user_withdraw');
+          assert(body.user_id !== undefined, 'user_id is required');
+          assert(body.book_id !== undefined, 'book_id is required');
+          assert(body.amount !== undefined, 'amount is required');
+          assert(body.deatil !== undefined, 'deatil is required');
+          assert(body.image !== undefined, 'image is required');
+
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              success: true,
+              message: "Withdrawal Request Submitted!",
+              withdrawal_id: 4
+            })
+          };
+        } else if (body.action === 'all_books') {
+          assert.strictEqual(body.action, 'all_books');
+          assert(body.user_id !== undefined, 'user_id is required');
+
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              success: true,
+              message: "Books retrieved successfully.",
+              all_books: [
+                { id: "324", name: "Lucky Vault", is_subscribed: true },
+                { id: "323", name: "Dice Verse", is_subscribed: false },
+                { id: "322", name: "Jackpot Spin", is_subscribed: true }
+              ]
+            })
+          };
         }
       }
       return originalFetch(url, options);
@@ -711,6 +745,108 @@ async function runTests() {
       assert.strictEqual(mongoRechargeMsg.recharge.amount, 1000);
       assert.strictEqual(mongoRechargeMsg.recharge.transactionId, '123456789012');
       console.log('✔ Recharge Request flow test successful');
+
+      // ----------------------------------------------------
+      // TEST 14: Testing Withdraw Request Proxy & Socket Flow
+      // ----------------------------------------------------
+      console.log('\n[Test 14] Testing Withdraw Request Proxy & Socket Flow...');
+      const withdrawRes = await fetch(`${serverUrl}/api/v1/withdraw/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          userId: TEST_USER_ID,
+          bookId: '324',
+          amount: 100,
+          detail: 'Bank Acc details',
+          image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+        })
+      });
+      const withdrawData = await withdrawRes.json();
+      assert.strictEqual(withdrawRes.status, 200);
+      assert.strictEqual(withdrawData.success, true);
+      assert.strictEqual(withdrawData.withdrawal_id, 4);
+      console.log('✔ Withdraw submission proxy to PHP successful');
+
+      // Test socket events for withdraw card message
+      const withdrawPromise = new Promise((resolve) => {
+        agentSocket.once('message:new', (msg) => {
+          console.log('✔ Realtime event message:new received on agent socket for withdraw:', msg._id);
+          resolve(msg);
+        });
+      });
+
+      const withdrawMsgId = 'msg-withdraw-test';
+      userSocket.emit('message:send', {
+        _id: withdrawMsgId,
+        conversationId: CONVERSATION_ID,
+        recipientId: TEST_AGENT_ID,
+        type: 'withdraw',
+        text: '🏦 Withdrawal Request: ₹100 for Lucky Vault (ID: 4)',
+        withdraw: {
+          userId: TEST_USER_ID,
+          bookId: '324',
+          bookName: 'Lucky Vault',
+          amount: 100,
+          bankDetails: 'Bank Acc details',
+          withdrawalId: '4',
+          proofImage: 'images/conv-1/proof.png'
+        }
+      });
+
+      // Process stream message for withdraw
+      await processStreamMessage('stream-id-withdraw', {
+        _id: withdrawMsgId,
+        conversationId: CONVERSATION_ID,
+        senderId: TEST_USER_ID,
+        senderType: 'user',
+        recipientId: TEST_AGENT_ID,
+        recipientType: 'agent',
+        participant1: TEST_AGENT_ID,
+        participant2: TEST_USER_ID,
+        type: 'withdraw',
+        text: '🏦 Withdrawal Request: ₹100 for Lucky Vault (ID: 4)',
+        withdraw: {
+          userId: TEST_USER_ID,
+          bookId: '324',
+          bookName: 'Lucky Vault',
+          amount: 100,
+          bankDetails: 'Bank Acc details',
+          withdrawalId: '4',
+          proofImage: 'images/conv-1/proof.png'
+        },
+        createdAt: new Date()
+      });
+
+      const withdrawMsg = await withdrawPromise;
+      assert.strictEqual(withdrawMsg.type, 'withdraw');
+      assert.strictEqual(withdrawMsg.withdraw.amount, 100);
+      assert.strictEqual(withdrawMsg.withdraw.withdrawalId, '4');
+
+      // Verify MongoDB document
+      const mongoWithdrawMsg = await Message.findById(withdrawMsgId);
+      assert(mongoWithdrawMsg, 'Withdraw message document should exist in Mongo');
+      assert.strictEqual(mongoWithdrawMsg.withdraw.amount, 100);
+      assert.strictEqual(mongoWithdrawMsg.withdraw.withdrawalId, '4');
+      console.log('✔ Withdraw card message socket and persistence flow test successful');
+
+      // ----------------------------------------------------
+      // TEST 15: Testing Get All Books Proxy
+      // ----------------------------------------------------
+      console.log('\n[Test 15] Testing Get All Books Proxy...');
+      const booksRes = await fetch(`${serverUrl}/api/v1/games/all-books`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`
+        }
+      });
+      const booksData = await booksRes.json();
+      assert.strictEqual(booksRes.status, 200);
+      assert.strictEqual(booksData.success, true);
+      assert(Array.isArray(booksData.all_books));
+      assert.strictEqual(booksData.all_books[0].name, 'Lucky Vault');
+      console.log('✔ Get all books proxy successful');
 
     } finally {
       global.fetch = originalFetch;

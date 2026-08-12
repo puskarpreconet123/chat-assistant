@@ -106,7 +106,7 @@ export function setupSocketGateway(httpServer) {
           return socket.emit('error', errPayload);
         }
 
-        const { conversationId, recipientId, type = 'text', text, audio, image, recharge } = data;
+        const { conversationId, recipientId, type = 'text', text, audio, image, recharge, withdraw } = data;
 
         if (!conversationId || !recipientId) {
           const errPayload = { error: 'conversationId and recipientId are required' };
@@ -114,7 +114,7 @@ export function setupSocketGateway(httpServer) {
           return socket.emit('error', errPayload);
         }
 
-        if (!['text', 'voice', 'image', 'recharge'].includes(type)) {
+        if (!['text', 'voice', 'image', 'recharge', 'withdraw'].includes(type)) {
           const errPayload = { error: 'Invalid message type' };
           if (typeof ackCallback === 'function') ackCallback(errPayload);
           return socket.emit('error', errPayload);
@@ -140,6 +140,12 @@ export function setupSocketGateway(httpServer) {
 
         if (type === 'recharge' && (!recharge || !recharge.userId || !recharge.amount || !recharge.transactionId || !recharge.proofImage)) {
           const errPayload = { error: 'Recharge message requires userId, amount, transactionId, and proofImage' };
+          if (typeof ackCallback === 'function') ackCallback(errPayload);
+          return socket.emit('error', errPayload);
+        }
+
+        if (type === 'withdraw' && (!withdraw || !withdraw.userId || !withdraw.amount || !withdraw.bankDetails || !withdraw.proofImage)) {
+          const errPayload = { error: 'Withdraw message requires userId, amount, bankDetails, and proofImage' };
           if (typeof ackCallback === 'function') ackCallback(errPayload);
           return socket.emit('error', errPayload);
         }
@@ -217,6 +223,7 @@ export function setupSocketGateway(httpServer) {
           audio: type === 'voice' ? audio : undefined,
           image: type === 'image' ? image : undefined,
           recharge: type === 'recharge' ? recharge : undefined,
+          withdraw: type === 'withdraw' ? withdraw : undefined,
           status: 'sent',
           createdAt,
           participant1: currentParticipant1,

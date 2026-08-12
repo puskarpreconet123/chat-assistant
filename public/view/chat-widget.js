@@ -562,6 +562,40 @@
         padding: 0.25rem 0.4rem !important;
       }
     }
+
+    .prepend-anim-class {
+      animation: messagePrependEntry 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes messagePrependEntry {
+      from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .older-messages-loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      width: 100%;
+      height: 32px;
+      box-sizing: border-box;
+    }
+
+    .older-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #cbd5e1;
+      border-top: 2px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
   `;
   document.head.appendChild(styleEl);
 
@@ -649,6 +683,10 @@
   let activeConversation = null;
   let seedData = null;
   let presenceInterval = null;
+  let messagesHasMore = false;
+  let messagesNextCursor = null;
+  let isLoadingOlder = false;
+  let messagesObserver = null;
 
   function getAvatarColor(name) {
     const colors = ['#f56565', '#ed8936', '#ecc94b', '#48bb78', '#38b2ac', '#4299e1', '#667eea', '#9f7aea', '#ed64a6'];
@@ -923,18 +961,96 @@
       const data = await res.json();
       
       const msgEl = document.getElementById('widgetMessages');
-      msgEl.innerHTML = '';
+      
+      // Inject sentinel and loader at the top
+      msgEl.innerHTML = `
+        <div id="widgetMessagesSentinel" style="height: 1px; width: 100%;"></div>
+        <div id="widgetMessagesOlderLoader" class="older-messages-loader" style="display: none;">
+          <div class="older-spinner"></div>
+        </div>
+      `;
+
+      messagesHasMore = data.hasMore || false;
+      messagesNextCursor = data.nextCursor || null;
+      isLoadingOlder = false;
 
       if (data.messages && data.messages.length > 0) {
         const sorted = [...data.messages].reverse();
         sorted.forEach(msg => appendMessageBubble(msg));
       } else {
-        msgEl.innerHTML = '<div style="margin:auto; font-size:0.75rem; color:#64748b;">No messages yet.</div>';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.margin = 'auto';
+        emptyDiv.style.fontSize = '0.75rem';
+        emptyDiv.style.color = '#64748b';
+        emptyDiv.textContent = 'No messages yet.';
+        msgEl.appendChild(emptyDiv);
       }
       msgEl.scrollTop = msgEl.scrollHeight;
+      
+      setupSentinelObserver();
     } catch (err) {
       console.error('Fetch messages error:', err);
     }
+  }
+
+  async function loadOlderMessages() {
+    if (!activeConversation || isLoadingOlder || !messagesHasMore || !messagesNextCursor) return;
+    
+    const msgEl = document.getElementById('widgetMessages');
+    const loader = document.getElementById('widgetMessagesOlderLoader');
+    if (!msgEl) return;
+
+    isLoadingOlder = true;
+    if (loader) loader.style.display = 'flex';
+
+    try {
+      const res = await fetch(`/api/v1/conversations/${activeConversation._id}/messages?limit=20&cursor=${messagesNextCursor}`, {
+        headers: { Authorization: `Bearer ${currentToken}` }
+      });
+      const data = await res.json();
+
+      messagesHasMore = data.hasMore || false;
+      messagesNextCursor = data.nextCursor || null;
+
+      if (data.messages && data.messages.length > 0) {
+        const oldScrollHeight = msgEl.scrollHeight;
+        
+        // Loop through messages and prepend them
+        const sorted = [...data.messages].reverse();
+        sorted.forEach(msg => appendMessageBubble(msg, true));
+
+        // Anchor scroll position to prevent layout shifts
+        msgEl.scrollTop = msgEl.scrollHeight - oldScrollHeight;
+      }
+    } catch (err) {
+      console.error('Error loading older messages:', err);
+    } finally {
+      isLoadingOlder = false;
+      if (loader) loader.style.display = 'none';
+    }
+  }
+
+  function setupSentinelObserver() {
+    const sentinel = document.getElementById('widgetMessagesSentinel');
+    const container = document.getElementById('widgetMessages');
+    if (!sentinel || !container) return;
+
+    if (messagesObserver) {
+      messagesObserver.disconnect();
+    }
+
+    messagesObserver = new IntersectionObserver(async (entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting && messagesHasMore && !isLoadingOlder) {
+        await loadOlderMessages();
+      }
+    }, {
+      root: container,
+      rootMargin: '50px 0px 0px 0px', // Fetch slightly before user hits absolute top
+      threshold: 0.1
+    });
+
+    messagesObserver.observe(sentinel);
   }
 
   function createVoicePlayerHtml(msg) {
@@ -1008,20 +1124,9 @@
           font-weight: 700;
           font-size: 0.75rem;
           letter-spacing: 0.05em;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
           text-transform: uppercase;
         ">
-          <span>💸 Recharge Request</span>
-          <span style="
-            background: rgba(255, 255, 255, 0.2);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.65rem;
-            white-space: nowrap;
-            flex-shrink: 0;
-          ">Pending</span>
+          💸 Recharge Request
         </div>
         
         <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
@@ -1049,7 +1154,80 @@
     `;
   }
 
-  function appendMessageBubble(msg) {
+  function createWithdrawCardHtml(msg) {
+    const withdraw = msg.withdraw || {};
+    const bookName = withdraw.bookName || 'Unknown Book';
+    const amount = withdraw.amount || 0;
+    const bankDetails = withdraw.bankDetails || 'N/A';
+    const userId = withdraw.userId || 'N/A';
+    const withdrawalId = withdraw.withdrawalId || 'N/A';
+    const proofUrl = withdraw.proofImageCdnUrl || withdraw.proofImage || '';
+
+    let proofImageHtml = '';
+    if (proofUrl) {
+      proofImageHtml = `
+        <div style="margin-top: 8px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #0f172a; position: relative; height: 110px; cursor: pointer;" onclick="window.open('${escapeHtmlAttr(proofUrl)}', '_blank')">
+          <img src="${escapeHtmlAttr(proofUrl)}" alt="QR Code" style="width: 100%; height: 100%; object-fit: cover;" />
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); padding: 4px; text-align: center; font-size: 0.65rem; color: #3b82f6; font-weight: bold;">🔍 Click to View QR Code</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="withdraw-card" style="
+        background: #1e293b;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        font-family: 'Inter', sans-serif;
+        color: #f8fafc;
+        min-width: 230px;
+        max-width: 270px;
+        margin-top: 4px;
+        text-align: left;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+          padding: 8px 12px;
+          font-weight: 700;
+          font-size: 0.75rem;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        ">
+          🏦 Withdraw Request
+        </div>
+        
+        <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 3px;">
+              <span style="color: #94a3b8;">User ID:</span>
+              <span style="font-weight: 600; color: #f1f5f9;">${escapeHtml(userId)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 3px;">
+              <span style="color: #94a3b8;">Game Book:</span>
+              <span style="font-weight: 600; color: #f1f5f9;">${escapeHtml(bookName)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 3px;">
+              <span style="color: #94a3b8;">Amount:</span>
+              <span style="font-weight: 700; color: #60a5fa; font-size: 0.85rem;">₹${escapeHtml(amount)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 3px;">
+              <span style="color: #94a3b8;">Withdrawal ID:</span>
+              <span style="font-weight: 600; color: #f1f5f9;">${escapeHtml(withdrawalId)}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="color: #94a3b8;">Bank Account Details:</span>
+              <span style="font-weight: 500; color: #e2e8f0; white-space: pre-wrap; font-size: 0.7rem; background: rgba(0,0,0,0.2); padding: 4px 6px; border-radius: 6px; margin-top: 2px;">${escapeHtml(bankDetails)}</span>
+            </div>
+          </div>
+          ${proofImageHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  function appendMessageBubble(msg, prepend = false) {
     const msgEl = document.getElementById('widgetMessages');
     const empty = msgEl.querySelector('div[style*="margin:auto"]');
     if (empty) empty.remove();
@@ -1077,6 +1255,8 @@
       contentHtml = `<img src="${msg.image?.cdnUrl || msg.image?.key}" alt="Image" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 4px; display: block; cursor: pointer;" onclick="window.open(this.src, '_blank')" />`;
     } else if (msg.type === 'recharge') {
       contentHtml = createRechargeCardHtml(msg);
+    } else if (msg.type === 'withdraw') {
+      contentHtml = createWithdrawCardHtml(msg);
     }
 
     bubble.innerHTML = `
@@ -1087,8 +1267,18 @@
       </div>
     `;
 
-    msgEl.appendChild(bubble);
-    msgEl.scrollTop = msgEl.scrollHeight;
+    if (prepend) {
+      bubble.classList.add('prepend-anim-class');
+      const loader = document.getElementById('widgetMessagesOlderLoader');
+      if (loader && loader.nextSibling) {
+        msgEl.insertBefore(bubble, loader.nextSibling);
+      } else {
+        msgEl.appendChild(bubble);
+      }
+    } else {
+      msgEl.appendChild(bubble);
+      msgEl.scrollTop = msgEl.scrollHeight;
+    }
   }
 
   let currentAudio = null;
@@ -1583,6 +1773,29 @@
     }
   }
 
+  let cachedBooks = [];
+  async function fetchAndCacheBooks() {
+    try {
+      if (!currentToken) return;
+      const res = await fetch('/api/v1/games/all-books', {
+        headers: { Authorization: `Bearer ${currentToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success && data.all_books) {
+          cachedBooks = data.all_books.map(b => ({
+            id: b.id,
+            name: b.name,
+            is_subscribed: b.is_subscribed === true || String(b.is_subscribed) === 'true' || b.is_subscribed === 1 || String(b.is_subscribed) === '1'
+          }));
+          console.log('[Widget] Cached books:', cachedBooks);
+        }
+      }
+    } catch (err) {
+      console.warn('[Widget] Failed to fetch books:', err);
+    }
+  }
+
   function initializeWidgetConnection() {
     const cached = localStorage.getItem('chat_identity');
     if (cached) {
@@ -1601,12 +1814,11 @@
       document.getElementById('widgetHeaderTitleText').textContent = currentUser.name;
       goBackToConvoList();
       connectWebsocket();
+      fetchAndCacheBooks();
     } else {
       window.location.href = 'login.html';
     }
   }
-
-
 
   // Quick forms
   function openQuickForm(type) {
@@ -1615,6 +1827,41 @@
     const body = overlay.querySelector('.quick-form-body');
     
     overlay.style.display = 'flex';
+
+    let selectOptionsHtml = '<option value="">Select Game</option>';
+    if (cachedBooks && cachedBooks.length > 0) {
+      const filteredBooks = type === 'deposit' ? cachedBooks : cachedBooks.filter(b => b.is_subscribed);
+      if (filteredBooks.length > 0) {
+        selectOptionsHtml = filteredBooks.map(b => `<option value="${b.id}" data-name="${escapeHtml(b.name)}">${escapeHtml(b.name)}</option>`).join('');
+      } else {
+        selectOptionsHtml = '<option value="">No Subscribed Games Available</option>';
+      }
+    } else {
+      // Fallback/Default options
+      const defaultBooks = [
+        { id: "324", name: "Lucky Vault", is_subscribed: true },
+        { id: "323", name: "Dice Verse", is_subscribed: false },
+        { id: "322", name: "Jackpot Spin", is_subscribed: false },
+        { id: "321", name: "Gold Rush Pro", is_subscribed: false },
+        { id: "310", name: "Infinity Fortune", is_subscribed: false },
+        { id: "309", name: "Crown Riches", is_subscribed: false }
+      ];
+      const filteredDefaults = type === 'deposit' ? defaultBooks : defaultBooks.filter(b => b.is_subscribed);
+      selectOptionsHtml = filteredDefaults.map(b => `<option value="${b.id}" data-name="${escapeHtml(b.name)}">${escapeHtml(b.name)}</option>`).join('');
+      
+      // Async fetch to update select in background
+      fetchAndCacheBooks().then(() => {
+        const selectEl = document.getElementById(type === 'deposit' ? 'depGame' : 'wdGame');
+        if (selectEl && cachedBooks.length > 0) {
+          const filteredBooks = type === 'deposit' ? cachedBooks : cachedBooks.filter(b => b.is_subscribed);
+          if (filteredBooks.length > 0) {
+            selectEl.innerHTML = filteredBooks.map(b => `<option value="${b.id}" data-name="${escapeHtml(b.name)}">${escapeHtml(b.name)}</option>`).join('');
+          } else {
+            selectEl.innerHTML = '<option value="">No Subscribed Games Available</option>';
+          }
+        }
+      });
+    }
     
     if (type === 'deposit') {
       title.innerHTML = '💸 Recharge Account';
@@ -1623,12 +1870,7 @@
           <div class="quick-form-field">
             <label>Select Game</label>
             <select id="depGame" required>
-              <option value="Cricket Book 365">Cricket Book 365</option>
-              <option value="Lotus Exchange">Lotus Exchange</option>
-              <option value="Diamond Casino">Diamond Casino</option>
-              <option value="Sky Exchange">Sky Exchange</option>
-              <option value="Fairplay Book">Fairplay Book</option>
-              <option value="Premium Sports Book">Premium Sports Book</option>
+              ${selectOptionsHtml}
             </select>
           </div>
           <div class="quick-form-field">
@@ -1651,9 +1893,7 @@
           <div class="quick-form-field">
             <label>Select Game</label>
             <select id="wdGame" required>
-              <option value="Royal Blackjack">Royal Blackjack</option>
-              <option value="Mega Jackpot Slots">Mega Jackpot Slots</option>
-              <option value="Texas Hold'em Poker">Texas Hold'em Poker</option>
+              ${selectOptionsHtml}
             </select>
           </div>
           <div class="quick-form-field">
@@ -1661,18 +1901,24 @@
             <input type="number" id="wdAmount" placeholder="Enter withdrawal amount" required min="1" />
           </div>
           <div class="quick-form-field">
-            <label>UPI ID</label>
-            <input type="text" id="wdUpiId" placeholder="e.g. username@upi" required />
+            <label>Bank Account Details</label>
+            <textarea id="wdBankDetails" placeholder="Enter Account No, IFSC, Holder Name, Bank Name, etc." required style="font-size: 0.75rem; padding: 0.35rem; border: 1px solid #cbd5e1; border-radius: 8px; min-height: 60px; font-family: inherit; resize: vertical;"></textarea>
           </div>
-          <button type="submit" class="quick-form-submit-btn">Submit Withdrawal Request</button>
+          <div class="quick-form-field">
+            <label>Upload QR Code</label>
+            <input type="file" id="wdQrFile" accept="image/*" required style="font-size: 0.75rem; padding: 0.35rem;" />
+          </div>
+          <button id="wdSubmitBtn" type="submit" class="quick-form-submit-btn">Submit Withdrawal Request</button>
         </form>
       `;
     }
   }
-
   async function generateWidgetQR(e) {
     e.preventDefault();
-    const game = document.getElementById('depGame').value;
+    const gameSelect = document.getElementById('depGame');
+    const bookId = gameSelect.value;
+    const selectedOption = gameSelect.options[gameSelect.selectedIndex];
+    const gameName = selectedOption ? (selectedOption.getAttribute('data-name') || selectedOption.text) : 'Unknown Book';
     const amount = document.getElementById('depAmount').value;
     
     const overlay = document.getElementById('quickFormOverlay');
@@ -1695,7 +1941,7 @@
         },
         body: JSON.stringify({
           userId: currentUser._id,
-          bookId: '324', // Default
+          bookId: bookId,
           amount: amount
         })
       });
@@ -1720,7 +1966,8 @@
       // Render Step 2
       body.innerHTML = `
         <form onsubmit="submitDepositForm(event)" style="display:flex; flex-direction:column; gap:0.75rem;">
-          <input type="hidden" id="depGame" value="${game}" />
+          <input type="hidden" id="depGame" value="${escapeHtml(gameName)}" />
+          <input type="hidden" id="depBookId" value="${escapeHtml(bookId)}" />
           <input type="hidden" id="depAmount" value="${amount}" />
           <input type="hidden" id="depQrId" value="${data.qr_id || ''}" />
           <input type="hidden" id="depRangeId" value="${data.range_id || ''}" />
@@ -1796,13 +2043,11 @@
     return activeConversation;
   }
 
-  async function submitRechargeRequest(game, amount, txId, file) {
+  async function submitRechargeRequest(game, amount, txId, file, bookId = '324') {
     const conv = await ensureWidgetConnectedAndGetConversation();
     const isStaff = currentUser.role === 'agent' || currentUser.role === 'admin';
     const partner = isStaff ? conv.emailId : conv.agentId;
     const recipientId = partner?._id || partner;
-    const agentId = isStaff ? currentUser._id : recipientId;
-    const emailId = currentUser.role === 'user' ? currentUser._id : recipientId;
     const conversationId = conv._id;
     const messageId = 'msg-recharge-' + Date.now();
 
@@ -1862,7 +2107,7 @@
     // 3. Construct recharge payload
     const rechargeObj = {
       userId: currentUser._id,
-      bookId: '324',
+      bookId: String(bookId),
       bookName: game,
       amount: Number(amount),
       transactionId: txId,
@@ -1912,6 +2157,7 @@
   async function submitDepositForm(e) {
     e.preventDefault();
     const game = document.getElementById('depGame').value;
+    const bookId = document.getElementById('depBookId') ? document.getElementById('depBookId').value : '324';
     const amount = document.getElementById('depAmount').value;
     const qrId = document.getElementById('depQrId').value;
     const rangeId = document.getElementById('depRangeId').value;
@@ -1949,7 +2195,7 @@
           rangeId: rangeId,
           amount: Number(amount),
           empId: empId,
-          bookId: '324',
+          bookId: bookId,
           transactionId: txId,
           image: base64Image
         })
@@ -1965,7 +2211,7 @@
         throw new Error(submitResult.message || 'Failed to submit payment details to the server');
       }
 
-      await submitRechargeRequest(game, amount, txId, file);
+      await submitRechargeRequest(game, amount, txId, file, bookId);
       closeQuickForm();
     } catch (err) {
       console.error(err);
@@ -1984,16 +2230,179 @@
     document.getElementById('quickFormOverlay').style.display = 'none';
   }
 
-  function submitIssueForm(e) {
+  async function submitIssueForm(e) {
     e.preventDefault();
-    const game = document.getElementById('wdGame').value;
+    const gameSelect = document.getElementById('wdGame');
+    const bookId = gameSelect.value;
+    const selectedOption = gameSelect.options[gameSelect.selectedIndex];
+    const gameName = selectedOption ? (selectedOption.getAttribute('data-name') || selectedOption.text) : 'Unknown Book';
     const amount = document.getElementById('wdAmount').value;
-    const upiId = document.getElementById('wdUpiId').value;
+    const bankDetails = document.getElementById('wdBankDetails').value.trim();
+    const fileInput = document.getElementById('wdQrFile');
+    const file = fileInput.files[0];
     
-    const formattedMessage = `💸 *Withdrawal Request*\\n• *Game:* \${game}\\n• *Amount:* ₹\${amount}\\n• *UPI ID:* \${upiId}\\n• *Status:* Processing`;
+    if (!file) return alert('QR Code image is required.');
     
-    sendFormMessage(formattedMessage);
-    closeQuickForm();
+    const submitBtn = document.getElementById('wdSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting Withdrawal Request...';
+    
+    try {
+      const fileToBase64 = (f) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(f);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = err => reject(err);
+      });
+
+      const base64Image = await fileToBase64(file);
+
+      // Submit to withdrawal submission proxy endpoint
+      const submitRes = await fetch('/api/v1/withdraw/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify({
+          userId: currentUser._id,
+          bookId: bookId,
+          amount: Number(amount),
+          detail: bankDetails,
+          image: base64Image
+        })
+      });
+
+      if (!submitRes.ok) {
+        const errorData = await submitRes.json();
+        throw new Error(errorData.error || errorData.message || 'Failed to submit withdrawal details to the server');
+      }
+
+      const submitResult = await submitRes.json();
+      if (!submitResult.success) {
+        throw new Error(submitResult.message || 'Failed to submit withdrawal details to the server');
+      }
+
+      await submitWithdrawRequest(gameName, amount, bankDetails, file, submitResult.withdrawal_id || 'N/A', bookId);
+      closeQuickForm();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit withdrawal request: ' + err.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Withdrawal Request';
+    }
+  }
+
+  async function submitWithdrawRequest(game, amount, bankDetails, file, withdrawalId, bookId = '324') {
+    const conv = await ensureWidgetConnectedAndGetConversation();
+    const isStaff = currentUser.role === 'agent' || currentUser.role === 'admin';
+    const partner = isStaff ? conv.emailId : conv.agentId;
+    const recipientId = partner?._id || partner;
+    const conversationId = conv._id;
+    const messageId = 'msg-withdraw-' + Date.now();
+
+    // 1. Get presigned URL for the QR code image
+    const presignedRes = await fetch('/api/v1/image/presigned-url', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${currentToken}`
+      },
+      body: JSON.stringify({ conversationId, mimeType: file.type || 'image/jpeg' })
+    });
+    
+    if (!presignedRes.ok) throw new Error('Failed to get upload URL');
+    const presignedData = await presignedRes.json();
+
+    let uploadRes;
+    let finalCdnUrl = presignedData.cdnUrl;
+    let finalFileKey = presignedData.fileKey;
+
+    try {
+      // 2. Upload file to S3
+      const uploadHeaders = {
+        'Content-Type': file.type || 'image/jpeg'
+      };
+      if (presignedData.uploadUrl.startsWith('/') || presignedData.uploadUrl.includes(window.location.host)) {
+        uploadHeaders['Authorization'] = `Bearer ${currentToken}`;
+      }
+      uploadRes = await fetch(presignedData.uploadUrl, {
+        method: 'PUT',
+        headers: uploadHeaders,
+        body: file
+      });
+      if (!uploadRes.ok) throw new Error('S3 Upload failed');
+    } catch (s3Err) {
+      console.warn('S3 upload failed, falling back to local mock upload:', s3Err);
+      const extension = file.type ? file.type.split('/')[1] || 'jpeg' : 'jpeg';
+      const mockKey = `images/${conversationId}/${currentUser._id || 'anonymous'}/${Date.now()}-${Math.floor(Math.random() * 1000)}.${extension}`;
+      const mockUploadUrl = `/api/v1/image/upload-mock?key=${mockKey}`;
+      
+      uploadRes = await fetch(mockUploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'image/jpeg',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: file
+      });
+      if (!uploadRes.ok) throw new Error('Local mock upload fallback failed');
+      
+      finalFileKey = mockKey;
+      finalCdnUrl = `/uploads/${mockKey}`;
+    }
+
+    const localPreviewUrl = URL.createObjectURL(file);
+
+    // 3. Construct withdraw payload
+    const withdrawObj = {
+      userId: currentUser._id,
+      bookId: String(bookId),
+      bookName: game,
+      amount: Number(amount),
+      bankDetails: bankDetails,
+      withdrawalId: String(withdrawalId),
+      proofImage: finalFileKey
+    };
+
+    const msgObj = {
+      _id: messageId,
+      conversationId,
+      senderId: currentUser._id,
+      senderType: currentUser.role,
+      type: 'withdraw',
+      text: `🏦 Withdrawal Request: ₹${amount} for ${game} (ID: ${withdrawalId})`,
+      withdraw: {
+        ...withdrawObj,
+        proofImageCdnUrl: localPreviewUrl
+      },
+      status: 'sent',
+      createdAt: new Date()
+    };
+
+    if (conv.isVirtual) {
+      conv.isVirtual = false;
+      const msgEl = document.getElementById('widgetMessages');
+      if (msgEl) msgEl.innerHTML = '';
+    }
+
+    // 4. Render locally if active convo is this one
+    const msgEl = document.getElementById('widgetMessages');
+    if (msgEl && activeConversation && activeConversation._id === conversationId) {
+      appendMessageBubble(msgObj);
+    }
+
+    // 5. Send via websocket
+    socket.emit('message:send', {
+      _id: messageId,
+      conversationId,
+      recipientId,
+      type: 'withdraw',
+      text: msgObj.text,
+      withdraw: withdrawObj
+    });
+
+    return msgObj;
   }
 
   function sendFormMessage(text) {

@@ -1,5 +1,6 @@
 import { Subscription } from '../models/Subscription.js';
 import { User } from '../models/User.js';
+import { config } from '../config/env.js';
 
 const DUMMY_GAMES = [
   {
@@ -146,3 +147,42 @@ export async function subscribeGame(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+export async function getAllBooks(req, res) {
+  try {
+    const userEmail = req.user.emailId;
+    if (!userEmail) {
+      return res.status(401).json({ error: 'User email not found in token' });
+    }
+
+    // Verify user exists in MongoDB User model
+    const user = await User.findOne({ $or: [{ emailId: userEmail }, { _id: userEmail }] });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found in database' });
+    }
+
+    const payload = {
+      action: 'all_books',
+      user_id: user.id || 22
+    };
+
+    console.log(`[GamesController] Fetching all books from PHP API at ${config.phpApiUrl}:`, payload);
+
+    const response = await fetch(config.phpApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`PHP API returned status ${response.status}`);
+    }
+
+    const result = await response.json();
+    return res.json(result);
+  } catch (err) {
+    console.error('[GamesController] Error in getAllBooks:', err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+

@@ -86,6 +86,20 @@ export async function getMessages(req, res) {
           }
         }
       }
+      if (obj.type === 'withdraw' && obj.withdraw && obj.withdraw.proofImage) {
+        const localPath = path.join(__dirname, '../../public/uploads', obj.withdraw.proofImage);
+        const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true' || fs.existsSync(localPath);
+        if (isMock) {
+          obj.withdraw.proofImageCdnUrl = `/uploads/${obj.withdraw.proofImage}`;
+        } else {
+          try {
+            const signedData = await generateImageDownloadUrl({ fileKey: obj.withdraw.proofImage });
+            obj.withdraw.proofImageCdnUrl = signedData.url;
+          } catch (err) {
+            obj.withdraw.proofImageCdnUrl = `${config.s3.cdnBaseUrl}/${obj.withdraw.proofImage}`;
+          }
+        }
+      }
       return obj;
     }));
 

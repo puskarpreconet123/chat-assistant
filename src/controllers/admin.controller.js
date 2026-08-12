@@ -26,11 +26,15 @@ async function syncWithTelewiz(role, emailId, agentId) {
             }
           }
 
+          const activeEmails = [];
+          const activeAgents = [];
+
           for (const u of syncData.data) {
             const uType = String(u.type || '').toUpperCase();
             const uStatus = String(u.show_status || u.status || 'ACTIVE').toUpperCase();
             if (uType === 'ADMIN' || uType === 'AGENCY') {
               const agencyUnqId = u.agency_unq_id || (uType === 'ADMIN' ? `ADMIN-${u.id}` : `AGENCY-${u.id}`);
+              activeAgents.push(agencyUnqId);
               await Agent.findByIdAndUpdate(
                 agencyUnqId,
                 {
@@ -44,6 +48,7 @@ async function syncWithTelewiz(role, emailId, agentId) {
                 { upsert: true }
               );
             } else {
+              activeEmails.push(u.email);
               const existingUser = await User.findOne({ $or: [{ _id: u.email }, { emailId: u.email }] });
               let userAgencyId = u.agency_id || '';
               let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || '';
@@ -73,6 +78,10 @@ async function syncWithTelewiz(role, emailId, agentId) {
               );
             }
           }
+
+          // Soft delete (deactivate) missing users and agents in MongoDB
+          await User.updateMany({ _id: { $nin: activeEmails } }, { $set: { status: 'inactive' } });
+          await Agent.updateMany({ _id: { $nin: activeAgents } }, { $set: { status: 'inactive' } });
         }
       }
     } else {
@@ -105,6 +114,9 @@ async function syncWithTelewiz(role, emailId, agentId) {
               }
             }
 
+            const activeEmails = [];
+            const agentUnqId = agentId || `AGENCY-${numericAgencyId}`;
+
             for (const u of syncData.data) {
               const uType = String(u.type || '').toUpperCase();
               const uStatus = String(u.show_status || u.status || 'ACTIVE').toUpperCase();
@@ -123,6 +135,7 @@ async function syncWithTelewiz(role, emailId, agentId) {
                   { upsert: true }
                 );
               } else {
+                activeEmails.push(u.email);
                 const userAgencyId = u.agency_id || String(numericAgencyId);
                 let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || '';
                 if (!userAgencyUnqId && userAgencyId) {
@@ -145,6 +158,12 @@ async function syncWithTelewiz(role, emailId, agentId) {
                 );
               }
             }
+
+            // Soft delete (deactivate) missing users assigned to this agent in MongoDB
+            await User.updateMany(
+              { agency_unq_id: agentUnqId, _id: { $nin: activeEmails } },
+              { $set: { status: 'inactive' } }
+            );
           }
         }
       }

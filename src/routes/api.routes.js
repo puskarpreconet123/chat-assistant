@@ -146,9 +146,14 @@ router.get('/image/play-url', imageController.getImagePlayUrl);
 // Game and Subscription routes
 router.get('/games', gamesController.getGames);
 router.post('/games/subscribe', gamesController.subscribeGame);
+router.get('/games/all-books', gamesController.getAllBooks);
 
 // Recharge routes
 router.post('/recharge/generate-qr', rechargeController.generateQrCode);
 router.post('/recharge/submit', rechargeController.submitRecharge);
+
+// Withdraw routes
+router.post('/withdraw/submit', rechargeController.submitWithdraw);
+
 
 

@@ -47,6 +47,7 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       audio,
       image,
       recharge,
+      withdraw,
       createdAt = new Date(),
       participant1,
       participant2,
@@ -67,6 +68,7 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       audio,
       image,
       recharge,
+      withdraw,
       status: 'sent',
       createdAt: new Date(createdAt)
     });
@@ -126,6 +128,20 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
           messageObj.recharge.proofImageCdnUrl = signedData.url;
         } catch (err) {
           messageObj.recharge.proofImageCdnUrl = `${config.s3.cdnBaseUrl}/${messageObj.recharge.proofImage}`;
+        }
+      }
+    }
+    if (messageObj.type === 'withdraw' && messageObj.withdraw && messageObj.withdraw.proofImage) {
+      const localPath = path.join(__dirname, '../../public/uploads', messageObj.withdraw.proofImage);
+      const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true' || fs.existsSync(localPath);
+      if (isMock) {
+        messageObj.withdraw.proofImageCdnUrl = `/uploads/${messageObj.withdraw.proofImage}`;
+      } else {
+        try {
+          const signedData = await generateImageDownloadUrl({ fileKey: messageObj.withdraw.proofImage });
+          messageObj.withdraw.proofImageCdnUrl = signedData.url;
+        } catch (err) {
+          messageObj.withdraw.proofImageCdnUrl = `${config.s3.cdnBaseUrl}/${messageObj.withdraw.proofImage}`;
         }
       }
     }
