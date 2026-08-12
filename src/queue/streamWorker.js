@@ -77,9 +77,11 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
     await Conversation.findByIdAndUpdate(
       conversationId,
       {
-        $setOnInsert : {
+        $setOnInsert: {
           participant1,
-          participant2,
+          participant2
+        },
+        $set: {
           lastMessageAt: new Date(createdAt)
         },
         $inc: {

@@ -1019,6 +1019,8 @@
             padding: 2px 6px;
             border-radius: 4px;
             font-size: 0.65rem;
+            white-space: nowrap;
+            flex-shrink: 0;
           ">Pending</span>
         </div>
         
