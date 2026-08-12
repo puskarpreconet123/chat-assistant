@@ -1425,6 +1425,21 @@
         
         globalConversations = data.conversations || [];
         
+        // Auto-create virtual conversation for a user with their agent if no chats exist yet
+        if (globalConversations.length === 0 && currentUser.role === 'user' && currentUser.agentId) {
+          globalConversations.push({
+            _id: `conv-${currentUser.agentId}-${currentUser._id}`,
+            agentId: currentUser.agentId,
+            emailId: currentUser._id,
+            isVirtual: true,
+            lastMessageAt: new Date(0).toISOString(),
+            participant1: currentUser.agentId,
+            participant2: currentUser._id,
+            participant1Details: { name: 'Support Agent', emailId: currentUser.agentId },
+            participant2Details: currentUser
+          });
+        }
+        
         globalConversations.sort((a, b) => {
           const tA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
           const tB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
@@ -1471,7 +1486,7 @@
 
             const hasAvatar = partner?.avatar && partner.avatar.trim() !== '';
             const avatarHtml = hasAvatar 
-              ? `<img class="avatar" src="${escapeHtmlAttr(partner.avatar)}" alt="${escapeHtmlAttr(partnerName)}" onerror="this.onerror=null; this.outerHTML='<div class=&quot;avatar&quot; style=&quot;background-color: ${avatarColor};&quot;>${initials}</div>';" style="object-fit: cover; border-radius: 50%;" />`
+              ? `<img class="avatar" src="${escapeHtmlAttr(partner.avatar)}" alt="${escapeHtmlAttr(partnerName)}" onerror="this.onerror=null; this.parentNode.innerHTML='${getInitials(partnerName)}';" style="object-fit: cover; border-radius: 50%;" />`
               : `<div class="avatar" style="background-color: ${avatarColor};">${initials}</div>`;
 
             item.innerHTML = `
@@ -1493,6 +1508,11 @@
 
             if (isCurrentActive) activeConversation = conv;
           });
+
+          // Auto-select the first conversation if none is active on initial load
+          if (!activeConversation) {
+            selectConversation(globalConversations[0]);
+          }
         } else {
           conversationList.innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-secondary); font-size:0.8rem;">No participants found.</div>';
         }
@@ -1643,10 +1663,26 @@
         const p2 = sorted[1];
         const virtualConvId = `conv-${p1}-${p2}`;
 
+        const isCurrentUserAgent = currentUser.role === 'agent' || currentUser.role === 'admin';
+        const isTargetUserAgent = user.role === 'agent' || user.role === 'admin' || user.type === 'ADMIN' || user.type === 'AGENCY';
+
+        let agentIdVal = currentUserId;
+        let emailIdVal = user;
+
+        if (!isCurrentUserAgent && isTargetUserAgent) {
+          // Current user is User, target is Agent
+          agentIdVal = targetUserId;
+          emailIdVal = currentUser;
+        } else if (isCurrentUserAgent && !isTargetUserAgent) {
+          // Current user is Agent, target is User
+          agentIdVal = currentUserId;
+          emailIdVal = user;
+        }
+
         const virtualConv = {
           _id: virtualConvId,
-          agentId: currentUserId,
-          emailId: user,
+          agentId: agentIdVal,
+          emailId: emailIdVal,
           lastMessageAt: new Date(0).toISOString(),
           unread: { agent: 0, user: 0 },
           isVirtual: true

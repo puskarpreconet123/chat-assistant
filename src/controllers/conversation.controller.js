@@ -8,26 +8,12 @@ export async function listConversations(req, res) {
 
     const isAgent = req.user.role === 'agent' || req.user.role === 'admin';
 
-    let filter = {};
-    if (isAgent) {
-      const agentDoc = await Agent.findOne({ $or: [{ _id: currentUserId }, { emailId: currentUserId }] });
-      const isAdmin = req.user.role === 'admin' || (agentDoc && agentDoc.type === 'ADMIN');
-      if (!isAdmin) {
-        filter = {
-          $or: [
-            { participant1: currentUserId },
-            { participant2: currentUserId }
-          ]
-        };
-      }
-    } else {
-      filter = {
-        $or: [
-          { participant1: currentUserId },
-          { participant2: currentUserId }
-        ]
-      };
-    }
+    const filter = {
+      $or: [
+        { participant1: currentUserId },
+        { participant2: currentUserId }
+      ]
+    };
 
     const limit = parseInt(req.query.limit || '20', 10);
     // Fetch conversations from MongoDB

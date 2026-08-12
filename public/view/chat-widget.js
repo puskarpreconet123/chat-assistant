@@ -696,6 +696,16 @@
       .replace(/'/g, '&#039;');
   }
 
+  function escapeHtmlAttr(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   // Socket Connection
   function connectWebsocket() {
     if (socket) socket.disconnect();
@@ -1710,6 +1720,9 @@
         <form onsubmit="submitDepositForm(event)" style="display:flex; flex-direction:column; gap:0.75rem;">
           <input type="hidden" id="depGame" value="${game}" />
           <input type="hidden" id="depAmount" value="${amount}" />
+          <input type="hidden" id="depQrId" value="${data.qr_id || ''}" />
+          <input type="hidden" id="depRangeId" value="${data.range_id || ''}" />
+          <input type="hidden" id="depEmpId" value="${data.emp_id || ''}" />
           
           <div style="text-align: center; margin: 0.25rem 0;">
             <div style="font-size: 0.75rem; color: #64748b; font-weight: bold; margin-bottom: 0.35rem; text-transform: uppercase;">Scan to Pay ₹${amount}</div>
@@ -1898,6 +1911,9 @@
     e.preventDefault();
     const game = document.getElementById('depGame').value;
     const amount = document.getElementById('depAmount').value;
+    const qrId = document.getElementById('depQrId').value;
+    const rangeId = document.getElementById('depRangeId').value;
+    const empId = document.getElementById('depEmpId').value;
     const txId = document.getElementById('depTxId').value.trim();
     const fileInput = document.getElementById('depProofFile');
     const file = fileInput.files[0];
@@ -1909,6 +1925,44 @@
     submitBtn.textContent = 'Uploading Receipt & Submitting...';
     
     try {
+      const fileToBase64 = (f) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(f);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = err => reject(err);
+      });
+
+      const base64Image = await fileToBase64(file);
+
+      // Submit to recharge submission proxy endpoint
+      const submitRes = await fetch('/api/v1/recharge/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify({
+          userId: currentUser._id,
+          qrId: qrId,
+          rangeId: rangeId,
+          amount: Number(amount),
+          empId: empId,
+          bookId: '324',
+          transactionId: txId,
+          image: base64Image
+        })
+      });
+
+      if (!submitRes.ok) {
+        const errorData = await submitRes.json();
+        throw new Error(errorData.error || errorData.message || 'Failed to submit payment details to the server');
+      }
+
+      const submitResult = await submitRes.json();
+      if (!submitResult.success) {
+        throw new Error(submitResult.message || 'Failed to submit payment details to the server');
+      }
+
       await submitRechargeRequest(game, amount, txId, file);
       closeQuickForm();
     } catch (err) {

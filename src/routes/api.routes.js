@@ -59,7 +59,7 @@ router.use(restRateLimiter(100, 60));
 // Conditionally parse JSON — skip for binary uploads (audio/webm, etc.)
 router.use((req, res, next) => {
   if (req.is('application/json') || (!req.headers['content-type'] && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH'))) {
-    express.json()(req, res, next);
+    express.json({ limit: '10mb' })(req, res, next);
   } else {
     next();
   }
@@ -149,5 +149,6 @@ router.post('/games/subscribe', gamesController.subscribeGame);
 
 // Recharge routes
 router.post('/recharge/generate-qr', rechargeController.generateQrCode);
+router.post('/recharge/submit', rechargeController.submitRecharge);
 
 

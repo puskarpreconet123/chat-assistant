@@ -203,6 +203,8 @@ async function runTests() {
       createdAt: new Date(),
       agentId: TEST_AGENT_ID,
       emailId: TEST_USER_ID,
+      participant1: TEST_AGENT_ID,
+      participant2: TEST_USER_ID,
       recipientId: TEST_AGENT_ID,
       recipientType: 'agent'
     });
@@ -260,7 +262,8 @@ async function runTests() {
     assert.strictEqual(readMongoMsg.status, 'read', 'Message status should be updated to read');
     
     const convDoc = await Conversation.findById(CONVERSATION_ID);
-    assert.strictEqual(convDoc.unread.agent, 0, 'Agent unread count should be reset to 0');
+    const unreadCount = convDoc.participant1 === TEST_AGENT_ID ? convDoc.unread1 : convDoc.unread2;
+    assert.strictEqual(unreadCount, 0, 'Agent unread count should be reset to 0');
     console.log('✔ Conversation unread count reset and message status updated to read');
 
     // ----------------------------------------------------
@@ -282,6 +285,8 @@ async function runTests() {
       createdAt: new Date(),
       agentId: TEST_AGENT_ID,
       emailId: TEST_USER_ID,
+      participant1: TEST_AGENT_ID,
+      participant2: TEST_USER_ID,
       recipientId: TEST_AGENT_ID,
       recipientType: 'agent'
     });
@@ -350,6 +355,8 @@ async function runTests() {
       createdAt: new Date(),
       agentId: TEST_AGENT_ID,
       emailId: TEST_USER_ID,
+      participant1: TEST_AGENT_ID,
+      participant2: TEST_USER_ID,
       recipientId: TEST_AGENT_ID,
       recipientType: 'agent'
     });
@@ -361,7 +368,8 @@ async function runTests() {
     assert.strictEqual(autoReadMongoMsg.status, 'read', 'Message status should automatically update to read');
 
     const updatedConvDoc = await Conversation.findById(CONVERSATION_ID);
-    assert.strictEqual(updatedConvDoc.unread.agent, 0, 'Agent unread count should be 0 after auto-read');
+    const updatedUnreadCount = updatedConvDoc.participant1 === TEST_AGENT_ID ? updatedConvDoc.unread1 : updatedConvDoc.unread2;
+    assert.strictEqual(updatedUnreadCount, 0, 'Agent unread count should be 0 after auto-read');
     console.log('✔ Auto-read verification successful! MongoDB message status is read and unread count is 0');
 
     // ----------------------------------------------------
@@ -399,6 +407,8 @@ async function runTests() {
       createdAt: new Date(),
       agentId: TEST_AGENT_ID,
       emailId: TEST_USER_ID,
+      participant1: TEST_AGENT_ID,
+      participant2: TEST_USER_ID,
       recipientId: TEST_AGENT_ID,
       recipientType: 'agent'
     });
@@ -542,6 +552,25 @@ async function runTests() {
               emp_id: body.agency_id || 23
             })
           };
+        } else if (body.action === 'recharge_by_user') {
+          assert.strictEqual(body.action, 'recharge_by_user');
+          assert(body.user_id !== undefined, 'user_id is required');
+          assert(body.qr_id !== undefined, 'qr_id is required');
+          assert(body.range_id !== undefined, 'range_id is required');
+          assert(body.amount !== undefined, 'amount is required');
+          assert(body.emp_id !== undefined, 'emp_id is required');
+          assert(body.book_id !== undefined, 'book_id is required');
+          assert(body.transaction_id !== undefined, 'transaction_id is required');
+          assert(body.image !== undefined, 'image is required');
+
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              success: true,
+              message: "Recharge request submitted successfully to PHP"
+            })
+          };
         }
       }
       return originalFetch(url, options);
@@ -596,7 +625,32 @@ async function runTests() {
       assert.strictEqual(qrData.success, true);
       assert.strictEqual(qrData.qr_available, true);
       assert.strictEqual(qrData.qr_id, 5);
+      assert.strictEqual(qrData.range_id, 2);
+      assert.strictEqual(qrData.emp_id, 1);
       assert(qrData.qr_url, 'Should return qr_url');
+
+      // Test Recharge Submit API proxy
+      const submitRes = await fetch(`${serverUrl}/api/v1/recharge/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`
+        },
+        body: JSON.stringify({
+          userId: TEST_USER_ID,
+          qrId: qrData.qr_id,
+          rangeId: qrData.range_id,
+          amount: 1000,
+          empId: qrData.emp_id,
+          bookId: '324',
+          transactionId: '123456789012',
+          image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+        })
+      });
+      const submitData = await submitRes.json();
+      assert.strictEqual(submitRes.status, 200);
+      assert.strictEqual(submitData.success, true);
+      console.log('✔ Recharge submission proxy to PHP successful');
 
       // Test socket events
       const rechargePromise = new Promise((resolve) => {
@@ -631,6 +685,8 @@ async function runTests() {
         senderType: 'user',
         recipientId: TEST_AGENT_ID,
         recipientType: 'agent',
+        participant1: TEST_AGENT_ID,
+        participant2: TEST_USER_ID,
         type: 'recharge',
         text: '💸 Recharge Request: ₹1000 for Cricket Book 365 (UTR: 123456789012)',
         recharge: {

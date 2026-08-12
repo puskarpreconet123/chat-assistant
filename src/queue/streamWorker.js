@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Emitter } from '@socket.io/redis-emitter';
 import { streamClient, pubClient } from '../config/redis.js';
 import { MESSAGES_STREAM_KEY } from './streamProducer.js';
@@ -7,6 +10,9 @@ import { isOnline } from '../services/presence.service.js';
 import { sendPushNotification } from '../services/push.service.js';
 import { config } from '../config/env.js';
 import { generatePresignedDownloadUrl as generateImageDownloadUrl } from '../services/image.service.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const CONSUMER_GROUP = 'messages-consumer-group';
 export const CONSUMER_NAME = `worker-${process.pid}-${Math.floor(Math.random() * 1000)}`;
@@ -71,7 +77,7 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
     await Conversation.findByIdAndUpdate(
       conversationId,
       {
-        $set: {
+        $setOnInsert : {
           participant1,
           participant2,
           lastMessageAt: new Date(createdAt)
@@ -85,7 +91,8 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
 
     const messageObj = createdMessage.toObject();
     if (messageObj.type === 'voice' && messageObj.audio && messageObj.audio.key) {
-      const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true';
+      const localPath = path.join(__dirname, '../../public/uploads', messageObj.audio.key);
+      const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true' || fs.existsSync(localPath);
       if (isMock) {
         messageObj.audio.cdnUrl = `/uploads/${messageObj.audio.key}`;
       } else {
@@ -93,7 +100,8 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       }
     }
     if (messageObj.type === 'image' && messageObj.image && messageObj.image.key) {
-      const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true';
+      const localPath = path.join(__dirname, '../../public/uploads', messageObj.image.key);
+      const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true' || fs.existsSync(localPath);
       if (isMock) {
         messageObj.image.cdnUrl = `/uploads/${messageObj.image.key}`;
       } else {
@@ -106,7 +114,8 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       }
     }
     if (messageObj.type === 'recharge' && messageObj.recharge && messageObj.recharge.proofImage) {
-      const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true';
+      const localPath = path.join(__dirname, '../../public/uploads', messageObj.recharge.proofImage);
+      const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true' || fs.existsSync(localPath);
       if (isMock) {
         messageObj.recharge.proofImageCdnUrl = `/uploads/${messageObj.recharge.proofImage}`;
       } else {

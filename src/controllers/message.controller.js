@@ -1,7 +1,13 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Message } from '../models/Message.js';
 import { Conversation } from '../models/Conversation.js';
 import { config } from '../config/env.js';
 import { generatePresignedDownloadUrl as generateImageDownloadUrl } from '../services/image.service.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function getMessages(req, res) {
   try {
@@ -44,7 +50,8 @@ export async function getMessages(req, res) {
     const messagesWithCdn = await Promise.all(messages.map(async msg => {
       const obj = msg.toObject();
       if (obj.type === 'voice' && obj.audio && obj.audio.key) {
-        const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true';
+        const localPath = path.join(__dirname, '../../public/uploads', obj.audio.key);
+        const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true' || fs.existsSync(localPath);
         if (isMock) {
           obj.audio.cdnUrl = `/uploads/${obj.audio.key}`;
         } else {
@@ -52,7 +59,8 @@ export async function getMessages(req, res) {
         }
       }
       if (obj.type === 'image' && obj.image && obj.image.key) {
-        const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true';
+        const localPath = path.join(__dirname, '../../public/uploads', obj.image.key);
+        const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true' || fs.existsSync(localPath);
         if (isMock) {
           obj.image.cdnUrl = `/uploads/${obj.image.key}`;
         } else {
@@ -61,6 +69,20 @@ export async function getMessages(req, res) {
             obj.image.cdnUrl = signedData.url;
           } catch (err) {
             obj.image.cdnUrl = `${config.s3.cdnBaseUrl}/${obj.image.key}`;
+          }
+        }
+      }
+      if (obj.type === 'recharge' && obj.recharge && obj.recharge.proofImage) {
+        const localPath = path.join(__dirname, '../../public/uploads', obj.recharge.proofImage);
+        const isMock = config.s3.accessKeyId === 'mock-access-key' || !config.s3.accessKeyId || process.env.USE_MOCK_S3 === 'true' || fs.existsSync(localPath);
+        if (isMock) {
+          obj.recharge.proofImageCdnUrl = `/uploads/${obj.recharge.proofImage}`;
+        } else {
+          try {
+            const signedData = await generateImageDownloadUrl({ fileKey: obj.recharge.proofImage });
+            obj.recharge.proofImageCdnUrl = signedData.url;
+          } catch (err) {
+            obj.recharge.proofImageCdnUrl = `${config.s3.cdnBaseUrl}/${obj.recharge.proofImage}`;
           }
         }
       }

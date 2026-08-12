@@ -215,6 +215,15 @@
             document.getElementById('amount-input').value = amount;
         }
 
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
         function updateBookSelection() {
             const labels = document.querySelectorAll('.book-option');
             labels.forEach(label => {
@@ -347,7 +356,7 @@
                             <input id="proof-input" type="file" accept="image/*" class="w-full bg-surface-raised border border-white/10 rounded-xl py-3 px-4 font-body-md text-text-primary focus:outline-none focus:ring-1 focus:ring-secondary-fixed-dim focus:border-secondary-fixed-dim transition-all" required>
                         </div>
                         
-                        <button id="submit-proof-btn" onclick="submitRechargeProof('${game}', ${amount})" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-2">
+                        <button id="submit-proof-btn" onclick="submitRechargeProof('${game}', ${amount}, '${data.qr_id || ''}', '${data.range_id || ''}', '${data.emp_id || ''}')" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-2">
                             Submit Proof
                         </button>
                     </section>
@@ -367,7 +376,7 @@
             }
         }
 
-        async function submitRechargeProof(game, amount) {
+        async function submitRechargeProof(game, amount, qrId, rangeId, empId) {
             const utrInput = document.getElementById('utr-input');
             const utr = utrInput.value.trim();
             if (!utr || !/^[a-zA-Z0-9]{12}$/.test(utr)) {
@@ -389,6 +398,47 @@
             try {
                 if (typeof window.submitRechargeRequest !== 'function') {
                     throw new Error('Chat widget is initializing, please try again in a moment.');
+                }
+
+                // Convert file to Base64 data URL
+                const base64Image = await fileToBase64(file);
+
+                const cached = localStorage.getItem('chat_identity');
+                if (!cached) {
+                    throw new Error('You must be logged in to recharge.');
+                }
+                const parsed = JSON.parse(cached);
+                const currentToken = parsed.token;
+                const currentUser = parsed.user;
+                currentUser._id = currentUser._id || currentUser.emailId;
+
+                // Submit to recharge submission endpoint
+                const submitRes = await fetch('/api/v1/recharge/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        userId: currentUser._id,
+                        qrId: qrId,
+                        rangeId: rangeId,
+                        amount: amount,
+                        empId: empId,
+                        bookId: '324',
+                        transactionId: utr,
+                        image: base64Image
+                    })
+                });
+
+                if (!submitRes.ok) {
+                    const errorData = await submitRes.json();
+                    throw new Error(errorData.error || errorData.message || 'Failed to submit payment details to the server');
+                }
+
+                const submitResult = await submitRes.json();
+                if (!submitResult.success) {
+                    throw new Error(submitResult.message || 'Failed to submit payment details to the server');
                 }
 
                 await window.submitRechargeRequest(game, amount, utr, file);
