@@ -596,6 +596,51 @@
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .image-loader-container {
+      position: relative;
+      max-width: 100%;
+      max-height: 200px;
+      min-width: 150px;
+      min-height: 100px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f1f5f9;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    
+    .image-loader-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid #cbd5e1;
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      position: absolute;
+      z-index: 2;
+    }
+
+    .image-loader-container img {
+      max-width: 100%;
+      max-height: 200px;
+      display: block;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1;
+    }
+
+    .image-loader-container.sending img {
+      opacity: 0.65;
+    }
   `;
   document.head.appendChild(styleEl);
 
@@ -1071,10 +1116,16 @@
       barsHtml += `<div class="waveform-bar" style="height:${height}%"></div>`;
     }
 
+    const isSending = msg.status === 'sending';
+    const buttonContent = isSending
+      ? `<div style="width: 12px; height: 12px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #333; border-radius: 50%; animation: spin 0.7s linear infinite;"></div>`
+      : `<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>`;
+    const disabledAttr = isSending ? 'disabled' : '';
+
     return `
       <div class="voice-player-container" id="player-${msg._id}" data-duration="${duration}">
-        <button class="voice-play-btn" onclick="playVoiceNote(this, '${msg.audio?.key}', '${msg._id}', ${duration})">
-          <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+        <button class="voice-play-btn" ${disabledAttr} onclick="playVoiceNote(this, '${msg.audio?.key}', '${msg._id}', ${duration})">
+          ${buttonContent}
         </button>
         <div class="voice-waveform-wrapper">
           <div class="voice-waveform">
@@ -1232,18 +1283,29 @@
     const empty = msgEl.querySelector('div[style*="margin:auto"]');
     if (empty) empty.remove();
 
-    if (msg._id && msgEl.querySelector(`[data-msg-id="${msg._id}"]`)) return;
+    let bubble = msg._id ? msgEl.querySelector(`[data-msg-id="${msg._id}"]`) : null;
+    const isNew = !bubble;
+
+    if (isNew) {
+      bubble = document.createElement('div');
+      if (msg._id) bubble.dataset.msgId = msg._id;
+    }
 
     const isOutgoing = msg.senderId === (currentUser._id || currentUser.emailId);
-    const bubble = document.createElement('div');
     bubble.className = `bubble-widget ${isOutgoing ? 'outgoing' : 'incoming'}`;
-    if (msg._id) bubble.dataset.msgId = msg._id;
+    if (msg.status === 'sending') {
+      bubble.classList.add('sending');
+    }
 
     let tickHtml = '';
     if (isOutgoing) {
-      const tickClass = msg.status === 'read' ? 'read' : '';
-      const tickSymbol = msg.status === 'read' ? '✓✓' : (msg.status === 'delivered' ? '✓✓' : '✓');
-      tickHtml = `<span class="tick-widget ${tickClass}">${tickSymbol}</span>`;
+      if (msg.status === 'sending') {
+        tickHtml = `<span class="tick-widget" style="opacity: 0.5;">⏱</span>`;
+      } else {
+        const tickClass = msg.status === 'read' ? 'read' : '';
+        const tickSymbol = msg.status === 'read' ? '✓✓' : (msg.status === 'delivered' ? '✓✓' : '✓');
+        tickHtml = `<span class="tick-widget ${tickClass}">${tickSymbol}</span>`;
+      }
     }
 
     const formattedTime = new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -1252,7 +1314,23 @@
     if (msg.type === 'voice') {
       contentHtml = createVoicePlayerHtml(msg);
     } else if (msg.type === 'image') {
-      contentHtml = `<img src="${msg.image?.cdnUrl || msg.image?.key}" alt="Image" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 4px; display: block; cursor: pointer;" onclick="window.open(this.src, '_blank')" />`;
+      const isSending = msg.status === 'sending';
+      const imageUrl = msg.image?.cdnUrl || msg.image?.key || '';
+      if (isSending) {
+        contentHtml = `
+          <div class="image-loader-container sending">
+            <div class="image-loader-spinner"></div>
+            <img src="${imageUrl}" alt="Sending..." style="opacity: 1;" />
+          </div>
+        `;
+      } else {
+        contentHtml = `
+          <div class="image-loader-container">
+            <div class="image-loader-spinner"></div>
+            <img src="${imageUrl}" alt="Image" onclick="window.open(this.src, '_blank')" style="object-fit: contain; width: 100%; height: 100%;" />
+          </div>
+        `;
+      }
     } else if (msg.type === 'recharge') {
       contentHtml = createRechargeCardHtml(msg);
     } else if (msg.type === 'withdraw') {
@@ -1267,17 +1345,49 @@
       </div>
     `;
 
-    if (prepend) {
-      bubble.classList.add('prepend-anim-class');
-      const loader = document.getElementById('widgetMessagesOlderLoader');
-      if (loader && loader.nextSibling) {
-        msgEl.insertBefore(bubble, loader.nextSibling);
+    // Robust handler to stop image loader spinner
+    if (msg.type === 'image') {
+      const img = bubble.querySelector('img');
+      if (img) {
+        const isSending = msg.status === 'sending';
+        if (isSending) {
+          img.style.opacity = '1';
+        } else {
+          const handleLoad = () => {
+            const spinner = img.previousElementSibling;
+            if (spinner && spinner.classList.contains('image-loader-spinner')) {
+              spinner.remove();
+            }
+            img.style.opacity = '1';
+            
+            const src = msg.image?.cdnUrl || '';
+            if (src.startsWith('blob:')) {
+              URL.revokeObjectURL(src);
+            }
+          };
+          if (img.complete) {
+            handleLoad();
+          } else {
+            img.onload = handleLoad;
+            img.onerror = handleLoad;
+          }
+        }
+      }
+    }
+
+    if (isNew) {
+      if (prepend) {
+        bubble.classList.add('prepend-anim-class');
+        const loader = document.getElementById('widgetMessagesOlderLoader');
+        if (loader && loader.nextSibling) {
+          msgEl.insertBefore(bubble, loader.nextSibling);
+        } else {
+          msgEl.appendChild(bubble);
+        }
       } else {
         msgEl.appendChild(bubble);
+        msgEl.scrollTop = msgEl.scrollHeight;
       }
-    } else {
-      msgEl.appendChild(bubble);
-      msgEl.scrollTop = msgEl.scrollHeight;
     }
   }
 
@@ -1555,6 +1665,25 @@
     input.placeholder = 'Uploading...';
     input.disabled = true;
 
+    // Immediately show the temporary preview bubble with sending status
+    const tempMsgObj = {
+      _id: messageId,
+      conversationId,
+      senderId: currentUser._id,
+      senderType: currentUser.role,
+      type: 'voice',
+      audio: { key: 'temp', duration, mimeType: 'audio/webm', cdnUrl: '' },
+      status: 'sending',
+      createdAt: new Date()
+    };
+
+    if (activeConversation.isVirtual) {
+      activeConversation.isVirtual = false;
+      document.getElementById('widgetMessages').innerHTML = '';
+    }
+
+    appendMessageBubble(tempMsgObj);
+
     try {
       const presignedRes = await fetch('/api/v1/voice/presigned-url', {
         method: 'POST',
@@ -1615,11 +1744,6 @@
         createdAt: new Date()
       };
 
-      if (activeConversation.isVirtual) {
-        activeConversation.isVirtual = false;
-        document.getElementById('widgetMessages').innerHTML = '';
-      }
-
       appendMessageBubble(msgObj);
 
       socket.emit('message:send', {
@@ -1632,6 +1756,9 @@
 
     } catch (err) {
       console.error('Voice note upload error:', err);
+      // Remove temporary bubble on failure
+      const tempBubble = document.querySelector(`[data-msg-id="${messageId}"]`);
+      if (tempBubble) tempBubble.remove();
       alert('Failed to send voice note: ' + err.message);
     } finally {
       input.placeholder = 'Type a message...';
@@ -1659,6 +1786,27 @@
     const input = document.getElementById('widgetMsgInput');
     input.placeholder = 'Uploading image...';
     input.disabled = true;
+
+    const localPreviewUrl = URL.createObjectURL(file);
+
+    // Immediately show the temporary preview bubble with sending status
+    const tempMsgObj = {
+      _id: messageId,
+      conversationId,
+      senderId: currentUser._id,
+      senderType: currentUser.role,
+      type: 'image',
+      image: { key: 'temp', mimeType: file.type || 'image/jpeg', cdnUrl: localPreviewUrl },
+      status: 'sending',
+      createdAt: new Date()
+    };
+
+    if (activeConversation.isVirtual) {
+      activeConversation.isVirtual = false;
+      document.getElementById('widgetMessages').innerHTML = '';
+    }
+
+    appendMessageBubble(tempMsgObj);
 
     try {
       const presignedRes = await fetch('/api/v1/image/presigned-url', {
@@ -1710,8 +1858,6 @@
         finalCdnUrl = `/uploads/${mockKey}`;
       }
 
-      const localPreviewUrl = URL.createObjectURL(file);
-
       const msgObj = {
         _id: messageId,
         conversationId,
@@ -1722,11 +1868,6 @@
         status: 'sent',
         createdAt: new Date()
       };
-
-      if (activeConversation.isVirtual) {
-        activeConversation.isVirtual = false;
-        document.getElementById('widgetMessages').innerHTML = '';
-      }
 
       appendMessageBubble(msgObj);
 
@@ -1740,6 +1881,9 @@
 
     } catch (err) {
       console.error('Image upload error:', err);
+      // Remove temporary bubble on failure
+      const tempBubble = document.querySelector(`[data-msg-id="${messageId}"]`);
+      if (tempBubble) tempBubble.remove();
       alert('Failed to send image: ' + err.message);
     } finally {
       input.placeholder = 'Type a message...';
