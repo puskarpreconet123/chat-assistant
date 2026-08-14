@@ -47,7 +47,7 @@ async function syncWithTelewiz(role, emailId, agentId) {
                 },
                 { upsert: true }
               );
-            } else {
+            } else if (uType === 'USER' || !uType || uType === '') {
               activeEmails.push(u.email);
               const existingUser = await User.findOne({ $or: [{ _id: u.email }, { emailId: u.email }] });
               let userAgencyId = u.agency_id || '';
@@ -120,8 +120,8 @@ async function syncWithTelewiz(role, emailId, agentId) {
             for (const u of syncData.data) {
               const uType = String(u.type || '').toUpperCase();
               const uStatus = String(u.show_status || u.status || 'ACTIVE').toUpperCase();
-              if (uType === 'AGENCY') {
-                const agencyUnqId = u.agency_unq_id || `AGENCY-${u.id}`;
+              if (uType === 'ADMIN' || uType === 'AGENCY') {
+                const agencyUnqId = u.agency_unq_id || (uType === 'ADMIN' ? `ADMIN-${u.id}` : `AGENCY-${u.id}`);
                 await Agent.findByIdAndUpdate(
                   agencyUnqId,
                   {
@@ -134,7 +134,7 @@ async function syncWithTelewiz(role, emailId, agentId) {
                   },
                   { upsert: true }
                 );
-              } else {
+              } else if (uType === 'USER' || !uType || uType === '') {
                 activeEmails.push(u.email);
                 const userAgencyId = u.agency_id || String(numericAgencyId);
                 let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || '';
@@ -167,6 +167,12 @@ async function syncWithTelewiz(role, emailId, agentId) {
           }
         }
       }
+    }
+
+    // Clean up legacy/incorrect entries in User collection (where their email matches an Agent)
+    const agentEmails = (await Agent.find({}, 'emailId')).map(a => a.emailId).filter(Boolean);
+    if (agentEmails.length > 0) {
+      await User.deleteMany({ $or: [{ _id: { $in: agentEmails } }, { emailId: { $in: agentEmails } }] });
     }
   } catch (err) {
     console.error('[Admin Sync] Failed to sync with Telewiz:', err.message);

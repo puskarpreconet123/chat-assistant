@@ -94,6 +94,8 @@ export async function login(req, res) {
           role = 'admin';
         } else if (remoteRole === 'AGENCY') {
           role = 'agent';
+        } else if (remoteRole === 'EMPLOYEE') {
+          return res.status(403).json({ error: 'Access denied: Employee accounts are not supported.' });
         } else {
           role = 'user';
         }
@@ -195,7 +197,7 @@ export async function login(req, res) {
                       },
                       { upsert: true }
                     );
-                  } else {
+                  } else if (uType === 'USER' || !uType || uType === '') {
                     const existingUser = await User.findOne({ $or: [{ _id: u.email }, { emailId: u.email }] });
                     let userAgencyId = u.agency_id || '';
                     let userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || '';
@@ -248,8 +250,8 @@ export async function login(req, res) {
                 for (const u of syncData.data) {
                   const uType = String(u.type || '').toUpperCase();
                   const uStatus = String(u.show_status || u.status || 'ACTIVE').toUpperCase();
-                  if (uType === 'AGENCY') {
-                    const agencyUnqId = u.agency_unq_id || `AGENCY-${u.id}`;
+                  if (uType === 'ADMIN' || uType === 'AGENCY') {
+                    const agencyUnqId = u.agency_unq_id || (uType === 'ADMIN' ? `ADMIN-${u.id}` : `AGENCY-${u.id}`);
                     await Agent.findByIdAndUpdate(
                       agencyUnqId,
                       {
@@ -262,7 +264,7 @@ export async function login(req, res) {
                       },
                       { upsert: true }
                     );
-                  } else {
+                  } else if (uType === 'USER' || !uType || uType === '') {
                     const userAgencyId = u.agency_id || String(remoteUser.id);
                     const userAgencyUnqId = u.agency_unq_id || agencyMap[String(userAgencyId)] || `AGENCY-${userAgencyId}`;
                     await User.findByIdAndUpdate(
@@ -305,8 +307,8 @@ export async function login(req, res) {
                 for (const u of syncData.data) {
                   const uType = String(u.type || '').toUpperCase();
                   const uStatus = String(u.show_status || u.status || 'ACTIVE').toUpperCase();
-                  if (uType === 'AGENCY') {
-                    const agencyUnqId = u.agency_unq_id || `AGENCY-${u.id}`;
+                  if (uType === 'ADMIN' || uType === 'AGENCY') {
+                    const agencyUnqId = u.agency_unq_id || (uType === 'ADMIN' ? `ADMIN-${u.id}` : `AGENCY-${u.id}`);
                     await Agent.findByIdAndUpdate(
                       agencyUnqId,
                       {
@@ -319,7 +321,7 @@ export async function login(req, res) {
                       },
                       { upsert: true }
                     );
-                  } else {
+                  } else if (uType === 'USER' || !uType || uType === '') {
                     const userAgencyIdVal = u.agency_id || String(remoteUser.agency_id);
                     let userAgencyUnqIdVal = u.agency_unq_id || agencyMap[String(userAgencyIdVal)] || '';
                     if (!userAgencyUnqIdVal && userAgencyIdVal) {
@@ -344,6 +346,12 @@ export async function login(req, res) {
                 }
               }
             }
+          }
+
+          // Clean up legacy/incorrect entries in User collection (where their email matches an Agent)
+          const agentEmails = (await Agent.find({}, 'emailId')).map(a => a.emailId).filter(Boolean);
+          if (agentEmails.length > 0) {
+            await User.deleteMany({ $or: [{ _id: { $in: agentEmails } }, { emailId: { $in: agentEmails } }] });
           }
         } catch (syncErr) {
           console.error('[Auth Sync] External sync failed:', syncErr.message);
