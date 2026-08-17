@@ -199,11 +199,12 @@ export async function updateTransactionStatus(req, res) {
       recipient_id,
       recipientId = recipient_id,
       userId = recipientId,
-      type = 'recharge',
-      status = 'approved',
+      type,
+      status,
       amount,
       transaction_id,
       transactionId = transaction_id,
+      txn_id = transactionId,
       reason,
       remarks,
       book_id,
@@ -214,10 +215,23 @@ export async function updateTransactionStatus(req, res) {
     } = req.body;
 
     const targetUserId = recipientId || userId;
-    const targetSenderId = senderId || 'admin';
+    const targetSenderId = senderId;
+    const targetTxnId = transactionId || txn_id;
+    const targetStatus = status;
+    const targetType = type;
 
-    if (!targetUserId) {
-      return res.status(400).json({ error: 'recipient_id (or userId) is required' });
+    // Validate required fields: sender_id, recipient_id, transaction_id, status, type
+    const missingFields = [];
+    if (!targetSenderId) missingFields.push('sender_id');
+    if (!targetUserId) missingFields.push('recipient_id');
+    if (!targetTxnId) missingFields.push('transaction_id');
+    if (!targetStatus) missingFields.push('status');
+    if (!targetType) missingFields.push('type');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: `Missing required field(s): ${missingFields.join(', ')}`
+      });
     }
 
     // 1. Resolve recipient user

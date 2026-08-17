@@ -25,12 +25,12 @@ Below is the complete dictionary of all supported JSON body payload parameters:
 
 | Parameter Name | Data Type | Required? | Default Fallback | Description & Accepted Values | Example |
 | :--- | :--- | :---: | :--- | :--- | :--- |
+| **`sender_id`** *(or `senderId`)* | `String` | **REQUIRED** | None | ID or Email of the Admin/Agent performing the approval. Used for message attribution and conversation matching. | `"admin@system.com"` |
 | **`recipient_id`** *(or `recipientId`, `userId`)* | `String` | **REQUIRED** | None | Unique Identifier of the player/user receiving the notification. Accepts User `_id`, numeric user `id`, or `emailId`. | `"player_12345"` |
-| **`sender_id`** *(or `senderId`)* | `String` | **Optional** | `"admin"` | ID or Email of the Admin/Agent performing the approval. Used for message attribution and conversation matching. | `"admin@system.com"` |
-| **`type`** | `String` | **Optional** | `"recharge"` | Transaction type. Allowed values: `"recharge"`, `"withdraw"`. | `"recharge"` |
-| **`status`** | `String` | **Optional** | `"approved"` | Transaction outcome. Allowed values: `"approved"`, `"rejected"`. | `"approved"` |
+| **`transaction_id`** *(or `transactionId`, `txn_id`)* | `String` | **REQUIRED** | None | Reference UTR number, bank transfer ID, or transaction hash. | `"TXN987654321"` |
+| **`status`** | `String` | **REQUIRED** | None | Transaction outcome. Allowed values: `"approved"`, `"rejected"`. | `"approved"` |
+| **`type`** | `String` | **REQUIRED** | None | Transaction type. Allowed values: `"recharge"`, `"withdraw"`. | `"recharge"` |
 | **`amount`** | `Number` \| `String` | **Optional** | `null` | The monetary amount involved in the transaction. | `500` |
-| **`transaction_id`** *(or `transactionId`)* | `String` | **Optional** | `null` | Reference UTR number, bank transfer ID, or transaction hash. | `"TXN987654321"` |
 | **`reason`** *(or `remarks`)* | `String` | **Optional** | `null` | Reason or remarks for approval or rejection. | `"Invalid UTR reference"` |
 | **`book_name`** *(or `bookName`, `book_id`, `bookId`)* | `String` \| `Number` | **Optional** | `null` | Name or numeric ID of the game/book linked to the transaction. | `"Diamond Book"` |
 | **`custom_message`** | `String` | **Optional** | Auto-generated template | Custom text override. If supplied, bypasses the auto-generated template and displays this exact text in chat. | `"Your bonus has been credited!"` |
@@ -39,42 +39,39 @@ Below is the complete dictionary of all supported JSON body payload parameters:
 
 ## 🔍 Detailed Field Breakdown
 
-### 1. `recipient_id` (REQUIRED)
+### 1. `sender_id` (REQUIRED)
 - **Type**: `String`
 - **Is Optional?**: ❌ **No (Required)**
-- **Behavior**: The server resolves this identifier to locate the user's MongoDB record and identify their active chat session. You can pass either the numeric database ID (`123`), string ID (`"user_123"`), or user email (`"user@example.com"`).
+- **Behavior**: Identifies the admin or agent who approved/rejected the request. Node.js uses this to match/create the conversation thread and attribute the message sender properly.
 
-### 2. `sender_id` (OPTIONAL)
+### 2. `recipient_id` (REQUIRED)
 - **Type**: `String`
-- **Is Optional?**: ✅ **Yes**
-- **Default**: `"admin"`
-- **Behavior**: Identifies who initiated the status change on the PHP panel. If omitted, the message will default to being sent from system `'admin'`.
+- **Is Optional?**: ❌ **No (Required)**
+- **Behavior**: The server resolves this identifier to locate the user's MongoDB record and identify their active chat session. Accepts numeric user ID (`123`), string ID (`"user_123"`), or user email (`"user@example.com"`).
 
-### 3. `type` (OPTIONAL)
+### 3. `transaction_id` (REQUIRED)
 - **Type**: `String`
-- **Is Optional?**: ✅ **Yes**
-- **Default**: `"recharge"`
-- **Accepted Values**: `"recharge"`, `"withdraw"`
-- **Behavior**: Determines the label used in the auto-generated chat message text (*"Recharge"* vs *"Withdrawal"*).
+- **Is Optional?**: ❌ **No (Required)**
+- **Behavior**: The unique reference transaction ID or UTR number. Included in the chat message as `Txn ID: <transaction_id>`.
 
-### 4. `status` (OPTIONAL)
+### 4. `status` (REQUIRED)
 - **Type**: `String`
-- **Is Optional?**: ✅ **Yes**
-- **Default**: `"approved"`
+- **Is Optional?**: ❌ **No (Required)**
 - **Accepted Values**: `"approved"`, `"rejected"`
 - **Behavior**: Controls the status emoji and text.
   - `"approved"` ➔ Adds `✅` and marks request as `APPROVED`.
   - `"rejected"` ➔ Adds `❌` and marks request as `REJECTED`.
 
-### 5. `amount` (OPTIONAL)
+### 5. `type` (REQUIRED)
+- **Type**: `String`
+- **Is Optional?**: ❌ **No (Required)**
+- **Accepted Values**: `"recharge"`, `"withdraw"`
+- **Behavior**: Determines the label used in the auto-generated chat message text (*"Recharge"* vs *"Withdrawal"*).
+
+### 6. `amount` (OPTIONAL)
 - **Type**: `Number` or `String`
 - **Is Optional?**: ✅ **Yes**
 - **Behavior**: Formatted into the text message as `Amount: ₹<amount>`.
-
-### 6. `transaction_id` (OPTIONAL)
-- **Type**: `String`
-- **Is Optional?**: ✅ **Yes**
-- **Behavior**: Included in the text message as `Txn ID: <transaction_id>`.
 
 ### 7. `reason` (OPTIONAL)
 - **Type**: `String`
