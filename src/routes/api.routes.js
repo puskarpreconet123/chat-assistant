@@ -155,5 +155,9 @@ router.post('/recharge/submit', rechargeController.submitRecharge);
 // Withdraw routes
 router.post('/withdraw/submit', rechargeController.submitWithdraw);
 
+// Transaction status update webhook (called by PHP server)
+router.post('/transaction/status-update', rechargeController.updateTransactionStatus);
+
+
 
 

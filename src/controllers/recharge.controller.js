@@ -1,5 +1,9 @@
+import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/env.js';
 import { User } from '../models/User.js';
+import { Agent } from '../models/Agent.js';
+import { Conversation } from '../models/Conversation.js';
+import { enqueueMessage } from '../queue/streamProducer.js';
 
 export async function generateQrCode(req, res) {
   try {
@@ -186,4 +190,135 @@ export async function submitWithdraw(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+export async function updateTransactionStatus(req, res) {
+  try {
+    const {
+      sender_id,
+      senderId = sender_id,
+      recipient_id,
+      recipientId = recipient_id,
+      userId = recipientId,
+      type = 'recharge',
+      status = 'approved',
+      amount,
+      transaction_id,
+      transactionId = transaction_id,
+      reason,
+      remarks,
+      book_id,
+      bookId = book_id,
+      book_name,
+      bookName = book_name,
+      custom_message
+    } = req.body;
+
+    const targetUserId = recipientId || userId;
+    const targetSenderId = senderId || 'admin';
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'recipient_id (or userId) is required' });
+    }
+
+    // 1. Resolve recipient user
+    let recipientEmail = targetUserId;
+    const userDoc = await User.findOne({
+      $or: [
+        { _id: targetUserId },
+        { emailId: targetUserId },
+        { id: Number(targetUserId) || -1 }
+      ]
+    });
+    if (userDoc) {
+      recipientEmail = userDoc.emailId;
+    }
+
+    // 2. Resolve sender (admin/agent)
+    let senderEmail = targetSenderId;
+    let senderRole = 'admin';
+    const agentDoc = await Agent.findOne({
+      $or: [
+        { _id: targetSenderId },
+        { emailId: targetSenderId }
+      ]
+    });
+    if (agentDoc) {
+      senderEmail = agentDoc.emailId;
+      senderRole = agentDoc.role || 'agent';
+    }
+
+    // 3. Find or compute conversationId
+    let conversationId = null;
+    const existingConv = await Conversation.findOne({
+      $or: [
+        { participant1: senderEmail, participant2: recipientEmail },
+        { participant1: recipientEmail, participant2: senderEmail },
+        { participant1: recipientEmail },
+        { participant2: recipientEmail }
+      ]
+    }).sort({ lastMessageAt: -1 });
+
+    if (existingConv) {
+      conversationId = existingConv._id;
+    } else {
+      const sorted = [senderEmail, recipientEmail].sort();
+      conversationId = `conv_${sorted[0]}_${sorted[1]}`;
+    }
+
+    // 4. Construct user-facing text message if custom_message is not provided
+    let textMessage = custom_message;
+    if (!textMessage) {
+      const isApproved = String(status).toLowerCase() === 'approved';
+      const isRecharge = String(type).toLowerCase() === 'recharge';
+      const statusIcon = isApproved ? '✅' : '❌';
+      const typeLabel = isRecharge ? 'Recharge' : 'Withdrawal';
+      const statusText = isApproved ? 'APPROVED' : 'REJECTED';
+
+      const details = [];
+      if (amount) details.push(`Amount: ₹${amount}`);
+      if (transactionId) details.push(`Txn ID: ${transactionId}`);
+      if (bookName || bookId) details.push(`Book: ${bookName || bookId}`);
+      const finalReason = reason || remarks;
+      if (finalReason) details.push(`Reason: ${finalReason}`);
+
+      textMessage = `${statusIcon} Your ${typeLabel} request has been ${statusText}.\n${details.join(' | ')}`;
+    }
+
+    // 5. Build message payload & enqueue to stream pipeline
+    const messageId = uuidv4();
+    const createdAt = new Date();
+    const sorted = [senderEmail, recipientEmail].sort();
+
+    const messagePayload = {
+      _id: messageId,
+      conversationId,
+      senderId: senderEmail,
+      senderType: senderRole,
+      type: 'text',
+      text: textMessage,
+      status: 'sent',
+      createdAt,
+      participant1: sorted[0],
+      participant2: sorted[1],
+      recipientId: recipientEmail,
+      recipientType: 'user'
+    };
+
+    await enqueueMessage(messagePayload);
+
+    console.log(`[RechargeController] Status update message ${messageId} enqueued for user ${recipientEmail}`);
+
+    return res.json({
+      success: true,
+      message: 'Transaction status update processed successfully',
+      messageId,
+      conversationId,
+      text: textMessage
+    });
+  } catch (err) {
+    console.error('[RechargeController] Error in updateTransactionStatus:', err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 
