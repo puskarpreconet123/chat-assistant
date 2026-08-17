@@ -234,8 +234,8 @@ export async function updateTransactionStatus(req, res) {
       });
     }
 
-    // 1. Resolve recipient user
-    let recipientEmail = targetUserId;
+    // 1. Resolve recipient user (email / user _id)
+    let resolvedRecipientId = targetUserId;
     const userDoc = await User.findOne({
       $or: [
         { _id: targetUserId },
@@ -244,38 +244,37 @@ export async function updateTransactionStatus(req, res) {
       ]
     });
     if (userDoc) {
-      recipientEmail = userDoc.emailId;
+      resolvedRecipientId = userDoc._id || userDoc.emailId;
     }
 
-    // 2. Resolve sender (admin/agent)
-    let senderEmail = targetSenderId;
+    // 2. Resolve sender (agent unq_id / _id / email)
+    let resolvedSenderId = targetSenderId;
     let senderRole = 'admin';
     const agentDoc = await Agent.findOne({
       $or: [
         { _id: targetSenderId },
-        { emailId: targetSenderId }
+        { emailId: targetSenderId },
+        { id: Number(targetSenderId) || -1 }
       ]
     });
     if (agentDoc) {
-      senderEmail = agentDoc.emailId;
-      senderRole = agentDoc.role || 'agent';
+      resolvedSenderId = agentDoc._id || agentDoc.emailId;
+      senderRole = agentDoc.type || agentDoc.role || 'agent';
     }
 
-    // 3. Find or compute conversationId
+    // 3. Find or compute conversationId strictly between resolvedSenderId and resolvedRecipientId
     let conversationId = null;
     const existingConv = await Conversation.findOne({
       $or: [
-        { participant1: senderEmail, participant2: recipientEmail },
-        { participant1: recipientEmail, participant2: senderEmail },
-        { participant1: recipientEmail },
-        { participant2: recipientEmail }
+        { participant1: resolvedSenderId, participant2: resolvedRecipientId },
+        { participant1: resolvedRecipientId, participant2: resolvedSenderId }
       ]
     }).sort({ lastMessageAt: -1 });
 
     if (existingConv) {
       conversationId = existingConv._id;
     } else {
-      const sorted = [senderEmail, recipientEmail].sort();
+      const sorted = [resolvedSenderId, resolvedRecipientId].sort();
       conversationId = `conv_${sorted[0]}_${sorted[1]}`;
     }
 
@@ -290,7 +289,7 @@ export async function updateTransactionStatus(req, res) {
 
       const details = [];
       if (amount) details.push(`Amount: ₹${amount}`);
-      if (transactionId) details.push(`Txn ID: ${transactionId}`);
+      if (targetTxnId) details.push(`Txn ID: ${targetTxnId}`);
       if (bookName || bookId) details.push(`Book: ${bookName || bookId}`);
       const finalReason = reason || remarks;
       if (finalReason) details.push(`Reason: ${finalReason}`);
@@ -301,12 +300,12 @@ export async function updateTransactionStatus(req, res) {
     // 5. Build message payload & enqueue to stream pipeline
     const messageId = uuidv4();
     const createdAt = new Date();
-    const sorted = [senderEmail, recipientEmail].sort();
+    const sorted = [resolvedSenderId, resolvedRecipientId].sort();
 
     const messagePayload = {
       _id: messageId,
       conversationId,
-      senderId: senderEmail,
+      senderId: resolvedSenderId,
       senderType: senderRole,
       type: 'text',
       text: textMessage,
@@ -314,13 +313,13 @@ export async function updateTransactionStatus(req, res) {
       createdAt,
       participant1: sorted[0],
       participant2: sorted[1],
-      recipientId: recipientEmail,
+      recipientId: resolvedRecipientId,
       recipientType: 'user'
     };
 
     await enqueueMessage(messagePayload);
 
-    console.log(`[RechargeController] Status update message ${messageId} enqueued for user ${recipientEmail}`);
+    console.log(`[RechargeController] Status update message ${messageId} enqueued for user ${resolvedRecipientId} from sender ${resolvedSenderId}`);
 
     return res.json({
       success: true,
