@@ -138,8 +138,8 @@ export function setupSocketGateway(httpServer) {
           return socket.emit('error', errPayload);
         }
 
-        if (type === 'recharge' && (!recharge || !recharge.userId || !recharge.amount || !recharge.transactionId || !recharge.proofImage)) {
-          const errPayload = { error: 'Recharge message requires userId, amount, transactionId, and proofImage' };
+        if (type === 'recharge' && (!recharge || !recharge.userId || !recharge.amount || !recharge.proofImage || (!recharge.transactionId && !recharge.utrNo))) {
+          const errPayload = { error: 'Recharge message requires userId, amount, proofImage, and transactionId or utrNo' };
           if (typeof ackCallback === 'function') ackCallback(errPayload);
           return socket.emit('error', errPayload);
         }

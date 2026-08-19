@@ -23,6 +23,7 @@ const MessageSchema = new mongoose.Schema(
       bookName: { type: String },
       amount: { type: Number },
       transactionId: { type: String },
+      utrNo: { type: String },
       proofImage: { type: String }
     },
     withdraw: {
@@ -31,7 +32,7 @@ const MessageSchema = new mongoose.Schema(
       bookName: { type: String },
       amount: { type: Number },
       bankDetails: { type: String },
-      withdrawalId: { type: String },
+      transactionId: { type: String },
       proofImage: { type: String }
     },
     status: {

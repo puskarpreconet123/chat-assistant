@@ -441,7 +441,8 @@
                     throw new Error(submitResult.message || 'Failed to submit payment details to the server');
                 }
 
-                await window.submitRechargeRequest(game, amount, utr, file);
+                const phpTxnId = submitResult.recharge_id || submitResult.transactionId || submitResult.id || utr;
+                await window.submitRechargeRequest(game, amount, utr, file, '324', phpTxnId);
                 
                 const container = document.getElementById('recharge-form-container');
                 container.innerHTML = `
@@ -449,6 +450,7 @@
                         <span class="material-symbols-outlined text-[64px] text-secondary-fixed-dim">check_circle</span>
                         <h2 class="font-headline-lg text-headline-lg text-secondary-fixed-dim">Recharge Submitted!</h2>
                         <p class="font-body-md text-text-muted">Your payment verification request has been successfully sent to the agency.</p>
+                        <p class="font-mono text-sm text-primary font-semibold">Txn ID: ${phpTxnId}</p>
                         <button onclick="window.location.href='records.html'" class="w-full bg-gradient-to-r from-primary to-inverse-primary text-on-primary-fixed font-headline-lg-mobile text-headline-lg-mobile py-4 rounded-xl shadow-[0_4px_20px_rgba(250,189,0,0.3)] hover:opacity-90 transition-all transform hover:-translate-y-0.5 mt-4">
                             View History
                         </button>

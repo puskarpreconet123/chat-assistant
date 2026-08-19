@@ -27,7 +27,8 @@ Below is the complete dictionary of all supported JSON body payload parameters:
 | :--- | :--- | :---: | :--- | :--- | :--- |
 | **`sender_id`** *(or `senderId`)* | `String` | **REQUIRED** | None | ID or Email of the Admin/Agent performing the approval. Used for message attribution and conversation matching. | `"admin@system.com"` |
 | **`recipient_id`** *(or `recipientId`, `userId`)* | `String` | **REQUIRED** | None | Unique Identifier of the player/user receiving the notification. Accepts User `_id`, numeric user `id`, or `emailId`. | `"player_12345"` |
-| **`transaction_id`** *(or `transactionId`, `txn_id`)* | `String` | **REQUIRED** | None | Reference UTR number, bank transfer ID, or transaction hash. | `"TXN987654321"` |
+| **`transaction_id`** *(or `transactionId`, `txn_id`, `recharge_id`, `withdraw_id`)* | `String` \| `Number` | **REQUIRED** | None | PHP transaction ID created for recharge or withdrawal. | `"TXN987654321"` |
+| **`utr`** *(or `utr_no`, `utrNo`)* | `String` | **Optional** | `null` | UTR / Bank reference number. Formatted as `UTR: <utr>`. | `"UTR8827103948"` |
 | **`status`** | `String` | **REQUIRED** | None | Transaction outcome. Allowed values: `"approved"`, `"rejected"`. | `"approved"` |
 | **`type`** | `String` | **REQUIRED** | None | Transaction type. Allowed values: `"recharge"`, `"withdraw"`. | `"recharge"` |
 | **`amount`** | `Number` \| `String` | **Optional** | `null` | The monetary amount involved in the transaction. | `500` |

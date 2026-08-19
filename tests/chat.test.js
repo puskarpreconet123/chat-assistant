@@ -791,7 +791,7 @@ async function runTests() {
           bookName: 'Lucky Vault',
           amount: 100,
           bankDetails: 'Bank Acc details',
-          withdrawalId: '4',
+          transactionId: '4',
           proofImage: 'images/conv-1/proof.png'
         }
       });
@@ -814,7 +814,7 @@ async function runTests() {
           bookName: 'Lucky Vault',
           amount: 100,
           bankDetails: 'Bank Acc details',
-          withdrawalId: '4',
+          transactionId: '4',
           proofImage: 'images/conv-1/proof.png'
         },
         createdAt: new Date()
@@ -823,13 +823,13 @@ async function runTests() {
       const withdrawMsg = await withdrawPromise;
       assert.strictEqual(withdrawMsg.type, 'withdraw');
       assert.strictEqual(withdrawMsg.withdraw.amount, 100);
-      assert.strictEqual(withdrawMsg.withdraw.withdrawalId, '4');
+      assert.strictEqual(withdrawMsg.withdraw.transactionId, '4');
 
       // Verify MongoDB document
       const mongoWithdrawMsg = await Message.findById(withdrawMsgId);
       assert(mongoWithdrawMsg, 'Withdraw message document should exist in Mongo');
       assert.strictEqual(mongoWithdrawMsg.withdraw.amount, 100);
-      assert.strictEqual(mongoWithdrawMsg.withdraw.withdrawalId, '4');
+      assert.strictEqual(mongoWithdrawMsg.withdraw.transactionId, '4');
       console.log('✔ Withdraw card message socket and persistence flow test successful');
 
       // ----------------------------------------------------

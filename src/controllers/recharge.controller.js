@@ -104,11 +104,11 @@ export async function generateQrCode(req, res) {
 
 export async function submitRecharge(req, res) {
   try {
-    console.log("inside submit recharge fn")
-    const { userId, qrId, rangeId, amount, empId, bookId, transactionId, image } = req.body;
+    console.log("inside submit recharge fn");
+    const { userId, qrId, rangeId, amount, empId, bookId, utr, utrNo = utr || req.body.transactionId, image } = req.body;
 
-    if (!userId || !amount || !transactionId || !image) {
-      return res.status(400).json({ error: 'userId, amount, transactionId, and image are required' });
+    if (!userId || !amount || !utrNo || !image) {
+      return res.status(400).json({ error: 'userId, amount, utrNo, and image are required' });
     }
 
     // Lookup user to resolve their numeric user ID (id)
@@ -123,7 +123,7 @@ export async function submitRecharge(req, res) {
       amount: Number(amount),
       emp_id: empId ? Number(empId) : null,
       book_id: bookId ? Number(bookId) : null,
-      transaction_id: transactionId,
+      transaction_id: utrNo, // PHP API expects UTR number in transaction_id field when user submits recharge
       image: image // Base64 string
     };
 
@@ -143,9 +143,15 @@ export async function submitRecharge(req, res) {
     }
 
     const result = await response.json();
-    return res.json(result);
+    const phpRechargeId = result.recharge_id || result.id || null;
+
+    return res.json({
+      ...result,
+      recharge_id: phpRechargeId,
+      transactionId: phpRechargeId, // PHP-generated Transaction ID exclusively
+      utrNo: utrNo
+    });
   } catch (err) {
-    console.log("inside submit recharge fn")
     console.error('[RechargeController] Error in submitRecharge:', err);
     return res.status(500).json({ error: err.message });
   }
@@ -184,7 +190,12 @@ export async function submitWithdraw(req, res) {
     });
 
     const result = await response.json();
-    return res.json(result);
+    const phpWithdrawId = result.withdraw_id || result.id || result.withdrawal_id || null;
+    return res.json({
+      ...result,
+      withdraw_id: phpWithdrawId,
+      transactionId: phpWithdrawId
+    });
   } catch (err) {
     console.error('[RechargeController] Error in submitWithdraw:', err);
     return res.status(500).json({ error: err.message });
@@ -203,8 +214,13 @@ export async function updateTransactionStatus(req, res) {
       status,
       amount,
       transaction_id,
-      transactionId = transaction_id,
+      recharge_id,
+      withdraw_id,
+      transactionId = transaction_id || recharge_id || withdraw_id,
       txn_id = transactionId,
+      utr,
+      utr_no,
+      utrNo = utr || utr_no,
       reason,
       remarks,
       book_id,
@@ -290,6 +306,7 @@ export async function updateTransactionStatus(req, res) {
       const details = [];
       if (amount) details.push(`Amount: ₹${amount}`);
       if (targetTxnId) details.push(`Txn ID: ${targetTxnId}`);
+      if (utrNo) details.push(`UTR: ${utrNo}`);
       if (bookName || bookId) details.push(`Book: ${bookName || bookId}`);
       const finalReason = reason || remarks;
       if (finalReason) details.push(`Reason: ${finalReason}`);

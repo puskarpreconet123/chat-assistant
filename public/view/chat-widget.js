@@ -1142,6 +1142,7 @@
     const bookName = recharge.bookName || 'Cricket Book 365';
     const amount = recharge.amount || 0;
     const transactionId = recharge.transactionId || 'N/A';
+    const utrNo = recharge.utrNo || '';
     const userId = recharge.userId || 'N/A';
     const proofUrl = recharge.proofImageCdnUrl || recharge.proofImage || '';
 
@@ -1194,10 +1195,16 @@
               <span style="color: #94a3b8;">Amount:</span>
               <span style="font-weight: 700; color: #34d399; font-size: 0.85rem;">₹${escapeHtml(amount)}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; padding-bottom: 3px;">
-              <span style="color: #94a3b8;">UTR / TxID:</span>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 3px;">
+              <span style="color: #94a3b8;">Txn ID:</span>
               <span style="font-weight: 600; color: #f1f5f9; font-family: monospace;">${escapeHtml(transactionId)}</span>
             </div>
+            ${utrNo ? `
+            <div style="display: flex; justify-content: space-between; padding-bottom: 3px;">
+              <span style="color: #94a3b8;">UTR No:</span>
+              <span style="font-weight: 600; color: #f1f5f9; font-family: monospace;">${escapeHtml(utrNo)}</span>
+            </div>
+            ` : ''}
           </div>
           ${proofImageHtml}
         </div>
@@ -1211,7 +1218,7 @@
     const amount = withdraw.amount || 0;
     const bankDetails = withdraw.bankDetails || 'N/A';
     const userId = withdraw.userId || 'N/A';
-    const withdrawalId = withdraw.withdrawalId || 'N/A';
+    const transactionId = withdraw.transactionId || withdraw.withdrawalId || 'N/A';
     const proofUrl = withdraw.proofImageCdnUrl || withdraw.proofImage || '';
 
     let proofImageHtml = '';
@@ -1264,8 +1271,8 @@
               <span style="font-weight: 700; color: #60a5fa; font-size: 0.85rem;">₹${escapeHtml(amount)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 3px;">
-              <span style="color: #94a3b8;">Withdrawal ID:</span>
-              <span style="font-weight: 600; color: #f1f5f9;">${escapeHtml(withdrawalId)}</span>
+              <span style="color: #94a3b8;">Txn ID:</span>
+              <span style="font-weight: 600; color: #f1f5f9;">${escapeHtml(transactionId)}</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 2px;">
               <span style="color: #94a3b8;">Bank Account Details:</span>
@@ -2187,7 +2194,7 @@
     return activeConversation;
   }
 
-  async function submitRechargeRequest(game, amount, txId, file, bookId = '324') {
+  async function submitRechargeRequest(game, amount, txId, file, bookId = '324', phpTxnId = null) {
     const conv = await ensureWidgetConnectedAndGetConversation();
     const isStaff = currentUser.role === 'agent' || currentUser.role === 'admin';
     const partner = isStaff ? conv.emailId : conv.agentId;
@@ -2254,9 +2261,19 @@
       bookId: String(bookId),
       bookName: game,
       amount: Number(amount),
-      transactionId: txId,
+      transactionId: phpTxnId || null,
+      utrNo: txId,
       proofImage: finalFileKey
     };
+
+    // Build clean summary text conditionally
+    const summaryParts = [];
+    if (amount) summaryParts.push(`₹${amount}`);
+    if (game) summaryParts.push(`for ${game}`);
+    if (phpTxnId) summaryParts.push(`(Txn ID: ${phpTxnId})`);
+    if (txId) summaryParts.push(`(UTR: ${txId})`);
+
+    const summaryText = summaryParts.length > 0 ? `💸 Recharge Request: ${summaryParts.join(' ')}` : '💸 Recharge Request';
 
     const msgObj = {
       _id: messageId,
@@ -2264,7 +2281,7 @@
       senderId: currentUser._id,
       senderType: currentUser.role,
       type: 'recharge',
-      text: `💸 Recharge Request: ₹${amount} for ${game} (UTR: ${txId})`,
+      text: summaryText,
       recharge: {
         ...rechargeObj,
         proofImageCdnUrl: localPreviewUrl
@@ -2306,7 +2323,7 @@
     const qrId = document.getElementById('depQrId').value;
     const rangeId = document.getElementById('depRangeId').value;
     const empId = document.getElementById('depEmpId').value;
-    const txId = document.getElementById('depTxId').value.trim();
+    const utrVal = document.getElementById('depTxId') ? document.getElementById('depTxId').value.trim() : '';
     const fileInput = document.getElementById('depProofFile');
     const file = fileInput.files[0];
     
@@ -2340,7 +2357,7 @@
           amount: Number(amount),
           empId: empId,
           bookId: bookId,
-          transactionId: txId,
+          utrNo: utrVal,
           image: base64Image
         })
       });
@@ -2355,7 +2372,9 @@
         throw new Error(submitResult.message || 'Failed to submit payment details to the server');
       }
 
-      await submitRechargeRequest(game, amount, txId, file, bookId);
+      // PHP server returns recharge_id / transactionId
+      const phpTxnId = submitResult.recharge_id || submitResult.transactionId || submitResult.id || null;
+      await submitRechargeRequest(game, amount, utrVal, file, bookId, phpTxnId);
       closeQuickForm();
     } catch (err) {
       console.error(err);
@@ -2505,9 +2524,17 @@
       bookName: game,
       amount: Number(amount),
       bankDetails: bankDetails,
-      withdrawalId: String(withdrawalId),
+      transactionId: String(withdrawalId),
       proofImage: finalFileKey
     };
+
+    // Build clean summary text conditionally
+    const summaryParts = [];
+    if (amount) summaryParts.push(`₹${amount}`);
+    if (game && game !== 'Unknown Book') summaryParts.push(`for ${game}`);
+    if (withdrawalId && withdrawalId !== 'N/A') summaryParts.push(`(Txn ID: ${withdrawalId})`);
+
+    const summaryText = summaryParts.length > 0 ? `🏦 Withdrawal Request: ${summaryParts.join(' ')}` : '🏦 Withdrawal Request';
 
     const msgObj = {
       _id: messageId,
@@ -2515,7 +2542,7 @@
       senderId: currentUser._id,
       senderType: currentUser.role,
       type: 'withdraw',
-      text: `🏦 Withdrawal Request: ₹${amount} for ${game} (ID: ${withdrawalId})`,
+      text: summaryText,
       withdraw: {
         ...withdrawObj,
         proofImageCdnUrl: localPreviewUrl
@@ -2549,33 +2576,6 @@
     return msgObj;
   }
 
-  function sendFormMessage(text) {
-    if (!socket || !socket.connected || !activeConversation) return;
-
-    const partner = currentUser.role === 'agent' ? activeConversation.emailId : activeConversation.agentId;
-    const recipientId = partner?._id || partner;
-    const conversationId = activeConversation._id;
-    const messageId = 'msg-' + Date.now();
-
-    socket.emit('message:send', {
-      messageId,
-      conversationId,
-      senderId: currentUser._id,
-      recipientId,
-      text,
-      type: 'text'
-    });
-
-    appendMessageBubble({
-      _id: messageId,
-      conversationId,
-      senderId: currentUser._id,
-      text,
-      type: 'text',
-      status: 'sent',
-      createdAt: new Date().toISOString()
-    });
-  }
 
   // Export functions to window
   window.toggleChatDrawer = toggleChatDrawer;
