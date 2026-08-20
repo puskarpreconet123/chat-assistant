@@ -227,7 +227,9 @@ export async function updateTransactionStatus(req, res) {
       bookId = book_id,
       book_name,
       bookName = book_name,
-      custom_message
+      custom_message,
+      invoice_url,
+      invoiceUrl = invoice_url || req.body.invoice_link || req.body.invoiceLink || req.body.invoice
     } = req.body;
 
     const targetUserId = recipientId || userId;
@@ -235,6 +237,16 @@ export async function updateTransactionStatus(req, res) {
     const targetTxnId = transactionId || txn_id;
     const targetStatus = status;
     const targetType = type;
+    let targetInvoiceUrl = invoiceUrl || null;
+    let targetUtrNo = utrNo || null;
+
+    // Check if utr contains an invoice URL (starts with http/https or contains pdf)
+    if (!targetInvoiceUrl && targetUtrNo && typeof targetUtrNo === 'string') {
+      const trimmedUtr = targetUtrNo.trim();
+      if (trimmedUtr.startsWith('http://') || trimmedUtr.startsWith('https://') || trimmedUtr.toLowerCase().endsWith('.pdf')) {
+        targetInvoiceUrl = trimmedUtr;
+      }
+    }
 
     // Validate required fields: sender_id, recipient_id, transaction_id, status, type
     const missingFields = [];
@@ -265,7 +277,7 @@ export async function updateTransactionStatus(req, res) {
 
     // 2. Resolve sender (agent unq_id / _id / email)
     let resolvedSenderId = targetSenderId;
-    let senderRole = 'admin';
+    let senderRole = 'agent';
     const agentDoc = await Agent.findOne({
       $or: [
         { _id: targetSenderId },
@@ -275,7 +287,8 @@ export async function updateTransactionStatus(req, res) {
     });
     if (agentDoc) {
       resolvedSenderId = agentDoc._id || agentDoc.emailId;
-      senderRole = agentDoc.type || agentDoc.role || 'agent';
+      const rawRole = String(agentDoc.role || agentDoc.type || 'agent').toLowerCase();
+      senderRole = rawRole === 'admin' ? 'admin' : 'agent';
     }
 
     // 3. Find or compute conversationId strictly between resolvedSenderId and resolvedRecipientId
@@ -306,7 +319,7 @@ export async function updateTransactionStatus(req, res) {
       const details = [];
       if (amount) details.push(`Amount: ₹${amount}`);
       if (targetTxnId) details.push(`Txn ID: ${targetTxnId}`);
-      if (utrNo) details.push(`UTR: ${utrNo}`);
+      if (targetUtrNo && targetUtrNo !== targetInvoiceUrl) details.push(`UTR: ${targetUtrNo}`);
       if (bookName || bookId) details.push(`Book: ${bookName || bookId}`);
       const finalReason = reason || remarks;
       if (finalReason) details.push(`Reason: ${finalReason}`);
@@ -326,6 +339,7 @@ export async function updateTransactionStatus(req, res) {
       senderType: senderRole,
       type: 'text',
       text: textMessage,
+      invoiceUrl: targetInvoiceUrl,
       status: 'sent',
       createdAt,
       participant1: sorted[0],
@@ -343,7 +357,8 @@ export async function updateTransactionStatus(req, res) {
       message: 'Transaction status update processed successfully',
       messageId,
       conversationId,
-      text: textMessage
+      text: textMessage,
+      invoiceUrl: targetInvoiceUrl
     });
   } catch (err) {
     console.error('[RechargeController] Error in updateTransactionStatus:', err);

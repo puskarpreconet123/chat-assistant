@@ -848,6 +848,34 @@ async function runTests() {
       assert.strictEqual(booksData.all_books[0].name, 'Lucky Vault');
       console.log('✔ Get all books proxy successful');
 
+      // ----------------------------------------------------
+      // TEST 16: Testing Transaction Status Update API with invoice_url
+      // ----------------------------------------------------
+      console.log('\n[Test 16] Testing Transaction Status Update API with invoice_url...');
+      const statusRes = await fetch(`${serverUrl}/api/v1/transaction/status-update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${agentToken}`
+        },
+        body: JSON.stringify({
+          sender_id: TEST_AGENT_ID,
+          recipient_id: TEST_USER_ID,
+          type: 'recharge',
+          status: 'approved',
+          amount: 500,
+          transaction_id: 'TXN-INV-999',
+          utr: 'UTR999888777',
+          invoice_url: 'https://example.com/invoices/inv-999.pdf'
+        })
+      });
+      const statusData = await statusRes.json();
+      assert.strictEqual(statusRes.status, 200, 'Status update endpoint should return 200 OK');
+      assert.strictEqual(statusData.success, true, 'Status update response should indicate success');
+      assert.strictEqual(statusData.invoiceUrl, 'https://example.com/invoices/inv-999.pdf', 'Response should contain invoiceUrl');
+      assert(statusData.messageId, 'Response should contain messageId');
+      console.log('✔ Transaction Status Update API with invoice_url successful');
+
     } finally {
       global.fetch = originalFetch;
     }

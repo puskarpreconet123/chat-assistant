@@ -8,7 +8,7 @@ const AgentSchema = new mongoose.Schema({
   mob: { type: String, default: '' },
   password: { type: String, default: '' },
   img: { type: String, default: '' },
-  type: { type: String, default: 'AGENCY' },
+  type: { type: String, default: 'agent' },
   show_status: { type: String, default: 'ACTIVE' },
   date: { type: String },
   time: { type: String }

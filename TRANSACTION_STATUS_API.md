@@ -35,6 +35,7 @@ Below is the complete dictionary of all supported JSON body payload parameters:
 | **`reason`** *(or `remarks`)* | `String` | **Optional** | `null` | Reason or remarks for approval or rejection. | `"Invalid UTR reference"` |
 | **`book_name`** *(or `bookName`, `book_id`, `bookId`)* | `String` \| `Number` | **Optional** | `null` | Name or numeric ID of the game/book linked to the transaction. | `"Diamond Book"` |
 | **`custom_message`** | `String` | **Optional** | Auto-generated template | Custom text override. If supplied, bypasses the auto-generated template and displays this exact text in chat. | `"Your bonus has been credited!"` |
+| **`invoice_url`** *(or `invoiceUrl`, `invoice_link`, `invoiceLink`, `invoice`)* | `String` | **Optional** | `null` | Direct URL to download transaction invoice PDF or receipt. If sent, renders a "Download Invoice" button in the chat response. | `"https://example.com/invoices/inv_1042.pdf"` |
 
 ---
 
@@ -96,11 +97,17 @@ Below is the complete dictionary of all supported JSON body payload parameters:
 - **Is Optional?**: ✅ **Yes**
 - **Behavior**: Overrides all auto-formatting. When present, the server uses this exact string as the chat message text.
 
+### 11. `invoice_url` (OPTIONAL)
+- **Type**: `String`
+- **Is Optional?**: ✅ **Yes**
+- **Accepted Keys**: `invoice_url`, `invoiceUrl`, `invoice_link`, `invoiceLink`, `invoice`
+- **Behavior**: Direct URL to transaction invoice/receipt file. When present, the Node.js Chat Server attaches this URL to the message payload and displays an interactive **Download Invoice** button directly inside the chat response bubble.
+
 ---
 
 ## 🧪 Sample Request Payloads
 
-### Sample 1: Approved Recharge (Standard)
+### Sample 1: Approved Recharge with Invoice (Standard)
 ```json
 {
   "sender_id": "admin_agent@system.com",
@@ -110,7 +117,8 @@ Below is the complete dictionary of all supported JSON body payload parameters:
   "amount": 1000,
   "transaction_id": "1042",
   "utr": "UTR8827103948",
-  "book_name": "Royal Cricket Book"
+  "book_name": "Royal Cricket Book",
+  "invoice_url": "https://example.com/invoices/inv_1042.pdf"
 }
 ```
 **Chat Message Text Generated:**

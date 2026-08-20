@@ -48,6 +48,7 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       image,
       recharge,
       withdraw,
+      invoiceUrl,
       createdAt = new Date(),
       participant1,
       participant2,
@@ -62,13 +63,14 @@ export async function processStreamMessage(streamMessageId, rawPayload) {
       _id,
       conversationId,
       senderId,
-      senderType,
+      senderType: senderType || 'agent',
       type,
       text,
       audio,
       image,
       recharge,
       withdraw,
+      invoiceUrl: invoiceUrl || null,
       status: 'sent',
       createdAt: new Date(createdAt)
     });

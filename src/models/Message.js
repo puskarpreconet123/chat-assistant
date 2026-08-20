@@ -8,6 +8,7 @@ const MessageSchema = new mongoose.Schema(
     senderType: { type: String, required: true, enum: ['agent', 'user', 'admin'] },
     type: { type: String, required: true, enum: ['text', 'voice', 'image', 'recharge', 'withdraw'] },
     text: { type: String },
+    invoiceUrl: { type: String, default: null },
     audio: {
       key: { type: String },
       duration: { type: Number },
