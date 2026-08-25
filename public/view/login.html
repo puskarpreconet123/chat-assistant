@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>Chat Assistant - Login</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script id="tailwind-config">
     tailwind.config = {
       darkMode: "class",
@@ -16,13 +16,14 @@
             "primary": "#008069",
             "primary-hover": "#016b57",
             "primary-light": "#d9fdd3",
-            "bg-app": "#f0f2f5",
-            "text-primary": "#111b21",
-            "text-secondary": "#667781",
-            "border-color": "#e9edef"
+            "bg-app": "#0f172a",
+            "text-primary": "#f8fafc",
+            "text-secondary": "#94a3b8",
+            "border-color": "#1e293b"
           },
           "fontFamily": {
-            "body": ["Inter", "sans-serif"]
+            "body": ["Inter", "sans-serif"],
+            "display": ["Outfit", "sans-serif"]
           }
         }
       }
@@ -32,206 +33,316 @@
     body {
       font-family: 'Inter', sans-serif;
     }
-    .glass-card {
-      background: #ffffff;
-      border: 1px solid var(--border-color, #e9edef);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    .font-display {
+      font-family: 'Outfit', sans-serif;
     }
-    .bg-ambient {
-      background: radial-gradient(circle at 50% 0%, rgba(0, 128, 105, 0.05), transparent 60%),
-                  radial-gradient(circle at 100% 100%, rgba(0, 128, 105, 0.02), transparent 40%);
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .btn-primary-gradient {
-      background: #008069;
+    .bg-gradient-glow {
+      background: radial-gradient(circle at 10% 20%, rgba(0, 128, 105, 0.15), transparent 40%),
+                  radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.12), transparent 40%),
+                  radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08), transparent 60%);
+    }
+    .btn-gradient {
+      background: linear-gradient(135deg, #008069 0%, #0d9488 100%);
       color: #ffffff;
-      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(0, 128, 105, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .btn-primary-gradient:hover {
-      background: #016b57;
-      box-shadow: 0 4px 12px rgba(0, 128, 105, 0.2);
+    .btn-gradient:hover {
+      background: linear-gradient(135deg, #016b57 0%, #0f766e 100%);
+      box-shadow: 0 6px 24px rgba(0, 128, 105, 0.45);
+      transform: translateY(-1px);
     }
     .input-glow:focus {
-      box-shadow: 0 0 0 1px #008069, 0 0 10px rgba(0, 128, 105, 0.1);
+      box-shadow: 0 0 0 2px rgba(0, 128, 105, 0.6), 0 0 16px rgba(0, 128, 105, 0.2);
       border-color: #008069;
+    }
+    .hero-image-shadow {
+      filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.5));
     }
   </style>
 </head>
-<body class="bg-bg-app text-text-primary min-h-screen flex items-center justify-center relative overflow-hidden antialiased">
+<body class="bg-slate-950 text-text-primary min-h-screen flex items-center justify-center relative overflow-x-hidden antialiased">
 
-<!-- Ambient Gradient Background -->
-<div class="absolute inset-0 z-0 bg-ambient"></div>
+  <!-- Ambient Glowing Background -->
+  <div class="fixed inset-0 z-0 bg-gradient-glow pointer-events-none"></div>
 
-<!-- Login Container -->
-<main class="relative z-10 w-full max-w-[440px] px-6 py-12 flex flex-col items-center">
-  <!-- Brand logo -->
-  <div class="mb-8 text-center flex flex-col items-center gap-3">
-    <div class="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
-      <span class="material-symbols-outlined text-[32px] font-medium">chat</span>
-    </div>
-    <h1 class="text-[1.8rem] font-bold text-primary tracking-tight">Chat Assistant</h1>
-  </div>
+  <!-- Main Split Layout Container -->
+  <div class="relative z-10 w-full min-h-screen lg:min-h-[720px] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div class="w-full max-w-[1240px] grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden glass-panel shadow-2xl border border-slate-800/80">
+      
+      <!-- LEFT SIDE: Game & Chat Hero Showcase -->
+      <div class="lg:col-span-7 bg-slate-900/90 relative p-8 lg:p-12 flex flex-col justify-between overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-800">
+        <!-- Floating Ambient Neon Orbs -->
+        <div class="absolute -top-24 -left-24 w-72 h-72 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-80 h-80 bg-teal-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
-  <!-- Main Card -->
-  <div class="glass-card w-full rounded-2xl p-8 relative overflow-hidden">
-    <!-- Brand Top Accent Line -->
-    <div class="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
-    
-    <div class="text-center mb-8">
-      <h2 class="text-xl font-bold text-text-primary mb-1">Welcome Back</h2>
-      <p class="text-text-secondary text-sm">Log in to manage your chats</p>
-    </div>
+        <!-- Top Header / Logo -->
+        <div class="relative z-10 flex items-center justify-between mb-8">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+              <span class="material-symbols-outlined text-[28px]">sports_esports</span>
+            </div>
+            <div>
+              <span class="font-display text-xl font-bold tracking-wide text-white block">Chat Assistant</span>
+              <span class="text-xs text-emerald-400 font-medium">Gaming & Live Help Portal</span>
+            </div>
+          </div>
 
-    <!-- Error Message banner -->
-    <div id="errorMsg" class="hidden text-red-600 bg-red-50 border border-red-200 text-sm rounded-lg p-3 text-center mb-4"></div>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            24/7 Live
+          </span>
+        </div>
 
-    <form class="space-y-5" onsubmit="handleLogin(event)">
-      <!-- Input Group: Username -->
-      <div class="space-y-2">
-        <label class="block text-xs font-bold text-text-secondary uppercase tracking-wider" for="username">Email Address</label>
-        <div class="relative">
-          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]">person</span>
-          <input class="w-full bg-[#f8f9fa] border border-[#ccd0d5] rounded-xl py-3 pl-12 pr-4 text-text-primary placeholder-text-secondary/50 text-sm focus:outline-none input-glow transition-all duration-200" id="username" placeholder="Enter your email address" type="email" required/>
+        <!-- Middle Hero Graphic & Copy -->
+        <div class="relative z-10 my-auto py-6">
+          <div class="relative rounded-2xl overflow-hidden mb-8 group border border-slate-700/60 shadow-2xl">
+            <img 
+              src="images/gaming_chat_login_hero.jpg" 
+              alt="Gaming & Chat Support Showcase" 
+              class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out hero-image-shadow"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
+            <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-slate-300 font-medium">
+              <span class="flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/50">
+                <span class="material-symbols-outlined text-emerald-400 text-[16px]">headset_mic</span>
+                Live Gaming Handoff
+              </span>
+              <span class="flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/50">
+                <span class="material-symbols-outlined text-teal-400 text-[16px]">bolt</span>
+                Instant AI Queue
+              </span>
+            </div>
+          </div>
+
+          <h2 class="font-display text-2xl lg:text-3xl font-extrabold text-white leading-tight mb-3">
+            Seamless Support for <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">Gamers & Customers</span>
+          </h2>
+          <p class="text-slate-400 text-sm leading-relaxed max-w-lg">
+            Manage real-time conversations, track player issues, deliver instant automated responses, and connect gamers with live support agents instantly.
+          </p>
+        </div>
+
+        <!-- Bottom Feature Chips -->
+        <div class="relative z-10 grid grid-cols-3 gap-3 pt-6 border-t border-slate-800/80 text-xs">
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="material-symbols-outlined text-emerald-400 text-[20px]">forum</span>
+            <span>Real-time Chat</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="material-symbols-outlined text-teal-400 text-[20px]">smart_toy</span>
+            <span>AI Bot Queue</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="material-symbols-outlined text-cyan-400 text-[20px]">security</span>
+            <span>Secure Access</span>
+          </div>
         </div>
       </div>
 
-      <!-- Input Group: Password -->
-      <div class="space-y-2">
-        <div class="flex justify-between items-center">
-          <label class="block text-xs font-bold text-text-secondary uppercase tracking-wider" for="password">Password</label>
-          <a class="text-xs font-bold text-primary hover:text-primary-hover transition-colors" href="#">Forgot Password?</a>
-        </div>
-        <div class="relative">
-          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]">lock</span>
-          <input class="w-full bg-[#f8f9fa] border border-[#ccd0d5] rounded-xl py-3 pl-12 pr-12 text-text-primary placeholder-text-secondary/50 text-sm focus:outline-none input-glow transition-all duration-200" id="password" placeholder="••••••••" type="password" required/>
-          <button class="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors" type="button" onclick="togglePasswordVisibility()">
-            <span class="material-symbols-outlined text-[20px]" id="passwordToggleIcon">visibility_off</span>
-          </button>
+      <!-- RIGHT SIDE: Login Form -->
+      <div class="lg:col-span-5 p-8 sm:p-12 flex flex-col justify-center bg-slate-950/60 relative">
+        <div class="max-w-md w-full mx-auto space-y-8">
+          
+          <!-- Form Header -->
+          <div>
+            <h3 class="font-display text-2xl sm:text-3xl font-bold text-white mb-2">Welcome Back</h3>
+            <p class="text-slate-400 text-sm">Please sign in to access your chat dashboard</p>
+          </div>
+
+          <!-- Error Message Banner -->
+          <div id="errorMsg" class="hidden text-rose-300 bg-rose-950/60 border border-rose-800/60 text-xs sm:text-sm rounded-xl p-3.5 text-center flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[20px] text-rose-400">error</span>
+            <span id="errorText">Invalid credentials</span>
+          </div>
+
+          <!-- Login Form -->
+          <form class="space-y-5" onsubmit="handleLogin(event)">
+            <!-- Email Field -->
+            <div class="space-y-2">
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider" for="username">
+                Email Address
+              </label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">mail</span>
+                <input 
+                  id="username" 
+                  type="email" 
+                  required
+                  placeholder="name@company.com" 
+                  class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-slate-500 text-sm focus:outline-none input-glow transition-all duration-200"
+                />
+              </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider" for="password">
+                  Password
+                </label>
+                <a href="#" class="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors">Forgot password?</a>
+              </div>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">lock</span>
+                <input 
+                  id="password" 
+                  type="password" 
+                  required
+                  placeholder="••••••••" 
+                  class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl py-3.5 pl-12 pr-12 text-white placeholder-slate-500 text-sm focus:outline-none input-glow transition-all duration-200"
+                />
+                <button 
+                  type="button" 
+                  onclick="togglePasswordVisibility()" 
+                  class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <span class="material-symbols-outlined text-[20px]" id="passwordToggleIcon">visibility_off</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button 
+              id="submitBtn" 
+              type="submit" 
+              class="w-full btn-gradient rounded-xl py-3.5 px-6 font-semibold text-sm flex justify-center items-center gap-2 text-white active:scale-[0.98] transition-all duration-200 mt-2"
+            >
+              <span>Sign In</span>
+              <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+            </button>
+          </form>
+
+          <!-- Footer / Notice -->
+          <div class="pt-4 text-center border-t border-slate-800/80">
+            <p class="text-xs text-slate-500">
+              Authorized Agent & User Portal &bull; Encrypted SSL Session
+            </p>
+          </div>
+
         </div>
       </div>
 
-      <!-- Primary CTA -->
-      <button id="submitBtn" class="w-full btn-primary-gradient rounded-xl py-3.5 px-6 mt-4 font-semibold text-sm flex justify-center items-center gap-2 relative overflow-hidden active:scale-[0.98] transition-all duration-200 shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/20" type="submit">
-        <span>Login</span>
-        <span class="material-symbols-outlined text-[18px]">login</span>
-      </button>
-    </form>
+    </div>
   </div>
-</main>
 
-<script>
-  // Auto-redirect if already logged in
-  (function () {
-    try {
-      const hasCookie = document.cookie.split(';').some(c => c.trim().startsWith('token='));
-      const cached = localStorage.getItem('chat_identity');
-      
-      if (!hasCookie && cached) {
-        // Stale frontend session - cookie is missing
-        localStorage.removeItem('chat_identity');
-        return;
-      }
-      
-      if (hasCookie && !cached) {
-        // Missing frontend session - clear cookie to prevent loop
-        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        return;
-      }
+  <script>
+    // Auto-redirect if already logged in
+    (function () {
+      try {
+        const hasCookie = document.cookie.split(';').some(c => c.trim().startsWith('token='));
+        const cached = localStorage.getItem('chat_identity');
+        
+        if (!hasCookie && cached) {
+          localStorage.removeItem('chat_identity');
+          return;
+        }
+        
+        if (hasCookie && !cached) {
+          document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          return;
+        }
 
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && parsed.token && parsed.user) {
-          if (parsed.user.role === 'user') {
-            window.location.href = 'home.html';
-          } else {
-            window.location.href = '../chat.html';
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.token && parsed.user) {
+            if (parsed.user.role === 'user') {
+              window.location.href = 'home.html';
+            } else {
+              window.location.href = '../chat.html';
+            }
           }
         }
+      } catch (_) { 
+        localStorage.removeItem('chat_identity'); 
+        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       }
-    } catch (_) { 
-      localStorage.removeItem('chat_identity'); 
-      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    }
-  })();
+    })();
 
-  function togglePasswordVisibility() {
-    const pwdInput = document.getElementById('password');
-    const toggleIcon = document.getElementById('passwordToggleIcon');
-    if (pwdInput.type === 'password') {
-      pwdInput.type = 'text';
-      toggleIcon.textContent = 'visibility';
-    } else {
-      pwdInput.type = 'password';
-      toggleIcon.textContent = 'visibility_off';
-    }
-  }
-
-  function showError(msg) {
-    const errEl = document.getElementById('errorMsg');
-    errEl.textContent = msg;
-    errEl.classList.remove('hidden');
-  }
-
-  function hideError() {
-    const errEl = document.getElementById('errorMsg');
-    errEl.classList.add('hidden');
-  }
-
-  async function handleLogin(e) {
-    e.preventDefault();
-    hideError();
-
-    const emailId = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-
-    if (!emailId) return showError('Please enter your Email Address.');
-    if (!password) return showError('Please enter your password.');
-
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    const btnSpan = btn.querySelector('span:first-child');
-    const originalText = btnSpan.textContent;
-    btnSpan.textContent = 'Authenticating...';
-
-    try {
-      const res = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailId, password })
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        showError(data.error || 'Authentication failed. Please verify your Email Address.');
-        return;
-      }
-
-      const user = data.user;
-      if (user) {
-        user._id = user._id || user.emailId;
-        user.avatar = data.avatar || user.avatar || '';
-      }
-
-      // Save credentials
-      localStorage.setItem('chat_identity', JSON.stringify({
-        role: user.role,
-        token: data.token,
-        user
-      }));
-
-      // Redirect to appropriate dashboard based on user role
-      if (user.role === 'agent') {
-        window.location.href = '../chat.html';
+    function togglePasswordVisibility() {
+      const pwdInput = document.getElementById('password');
+      const toggleIcon = document.getElementById('passwordToggleIcon');
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        toggleIcon.textContent = 'visibility';
       } else {
-        window.location.href = 'home.html';
+        pwdInput.type = 'password';
+        toggleIcon.textContent = 'visibility_off';
       }
-    } catch (err) {
-      showError('Connection error. Please check your network and try again.');
-      console.error(err);
-    } finally {
-      btn.disabled = false;
-      btnSpan.textContent = originalText;
     }
-  }
-</script>
+
+    function showError(msg) {
+      const errEl = document.getElementById('errorMsg');
+      const errTxt = document.getElementById('errorText');
+      errTxt.textContent = msg;
+      errEl.classList.remove('hidden');
+    }
+
+    function hideError() {
+      const errEl = document.getElementById('errorMsg');
+      errEl.classList.add('hidden');
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideError();
+
+      const emailId = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!emailId) return showError('Please enter your Email Address.');
+      if (!password) return showError('Please enter your password.');
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      const btnSpan = btn.querySelector('span:first-child');
+      const originalText = btnSpan.textContent;
+      btnSpan.textContent = 'Authenticating...';
+
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emailId, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || 'Authentication failed. Please verify your Email Address.');
+          return;
+        }
+
+        const user = data.user;
+        if (user) {
+          user._id = user._id || user.emailId;
+          user.avatar = data.avatar || user.avatar || '';
+        }
+
+        localStorage.setItem('chat_identity', JSON.stringify({
+          role: user.role,
+          token: data.token,
+          user
+        }));
+
+        if (user.role === 'agent') {
+          window.location.href = '../chat.html';
+        } else {
+          window.location.href = 'home.html';
+        }
+      } catch (err) {
+        showError('Connection error. Please check your network and try again.');
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btnSpan.textContent = originalText;
+      }
+    }
+  </script>
 </body>
 </html>
