@@ -10,8 +10,8 @@ ENV NODE_ENV=production
 # Copy dependency manifests
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production
+# Install dependencies
+RUN npm ci
 
 # Copy application source code and static files
 COPY src ./src

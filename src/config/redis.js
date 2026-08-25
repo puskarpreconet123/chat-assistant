@@ -1,11 +1,14 @@
 import { Redis } from 'ioredis';
-import RedisMock from 'ioredis-mock';
+import { createRequire } from 'module';
 import { config } from './env.js';
+
+const require = createRequire(import.meta.url);
 
 function createRedisInstance(name) {
   if (process.env.USE_MOCK_REDIS === 'true') {
+    const RedisMock = require('ioredis-mock');
     return new RedisMock();
-  }
+  } 
 
   const client = new Redis(config.redisUrl, {
     maxRetriesPerRequest: null,
